@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:20
+    command: sleep infinity
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - ..:/workspace:cached
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/novedad_db
+      - PORT=3001
+    depends_on:
+      - db
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: novedad_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+volumes:
+  pg_data:
