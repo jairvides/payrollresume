@@ -1,9 +1,13 @@
 {
-  "actualizado": "2026-04-30T03:11:49.770Z",
+  "actualizado": "2026-05-04T07:30:02.767Z",
   "empleados": [
     {
       "contrato": "1128104827",
       "nombre": "ALFARO CAMARGO ARLEY ALEJANDRO"
+    },
+    {
+      "contrato": "1193219009",
+      "nombre": "ALGARIN MOYA WUILLIAM ALBERTO"
     },
     {
       "contrato": "19619861",
@@ -12,6 +16,14 @@
     {
       "contrato": "57272444",
       "nombre": "ALVIS BARRIOS MILENA PATRICIA"
+    },
+    {
+      "contrato": "195982123",
+      "nombre": "ANAYA ANAYA JOSE ANGEL"
+    },
+    {
+      "contrato": "1193154681",
+      "nombre": "ARAGON TAMARA CARLOS ANDRES"
     },
     {
       "contrato": "10829328961",
@@ -58,12 +70,20 @@
       "nombre": "BOLAÑO MERCADO EFRAIN JAVIER"
     },
     {
+      "contrato": "1065641354",
+      "nombre": "BUELVAS CASTRO VICTOR LUIS"
+    },
+    {
       "contrato": "852901601",
       "nombre": "BURGOS ALEMAN YILMAR DE JESUS"
     },
     {
       "contrato": "11931334081",
       "nombre": "CABARCAS GARCIA DANILO JAVIER"
+    },
+    {
+      "contrato": "1007095248",
+      "nombre": "CABARCAS GARCIA FRANCISCO AVELARDO"
     },
     {
       "contrato": "11932123284",
@@ -84,6 +104,10 @@
     {
       "contrato": "19619781",
       "nombre": "CANTILLO ESCORCIA RAFAEL ANTONIO"
+    },
+    {
+      "contrato": "195921121",
+      "nombre": "CANTILLO FERNANDEZ PEDRO ANTONIO"
     },
     {
       "contrato": "85290180",
@@ -138,6 +162,10 @@
       "nombre": "CASTRO ORDOÑEZ ARNULFO ALBERTO"
     },
     {
+      "contrato": "1007929143",
+      "nombre": "CASTRO POLO CARLOS DAVID"
+    },
+    {
       "contrato": "1193154680",
       "nombre": "CASTRO POLO LUIS ENRIQUE"
     },
@@ -151,6 +179,10 @@
     },
     {
       "contrato": "1128104083",
+      "nombre": "CERVANTES MUÑOZ ANDRES DAVID"
+    },
+    {
+      "contrato": "11281040831",
       "nombre": "CERVANTES MUÑOZ ANDRES DAVID"
     },
     {
@@ -180,6 +212,10 @@
     {
       "contrato": "195952111",
       "nombre": "CRESPO GARCIA MIGUEL ARCANGEL"
+    },
+    {
+      "contrato": "19596842",
+      "nombre": "CRESPO VALENCIA NIBALDO ANTONIO"
     },
     {
       "contrato": "7716586812",
@@ -226,6 +262,10 @@
       "nombre": "ESTRADA PERTUZ LUIS ALBERTO"
     },
     {
+      "contrato": "195888171",
+      "nombre": "FABIAN PABON FELIX ANTONIO"
+    },
+    {
       "contrato": "127037371",
       "nombre": "FABIAN PABON GERMAN ELIAS"
     },
@@ -236,6 +276,10 @@
     {
       "contrato": "17948898",
       "nombre": "FINCE ARPUSHANA JAIDER"
+    },
+    {
+      "contrato": "1079912747",
+      "nombre": "FONTALVO PERTUZ VICTOR MANUEL"
     },
     {
       "contrato": "85290136",
@@ -258,6 +302,10 @@
       "nombre": "GARCIA BARRANCO CRISTIAN RAFAEL"
     },
     {
+      "contrato": "11281049831",
+      "nombre": "GARCIA CANTILLO MATIAS JOSE"
+    },
+    {
       "contrato": "771665103",
       "nombre": "GARCIA GARCIA RAFAEL MARIA"
     },
@@ -272,6 +320,10 @@
     {
       "contrato": "19602023",
       "nombre": "GONZALEZ MARTINEZ JARRINSON ALFONSO"
+    },
+    {
+      "contrato": "195998631",
+      "nombre": "GONZALEZ NOCHE WILMER ALFONSO"
     },
     {
       "contrato": "853804321",
@@ -320,6 +372,10 @@
     {
       "contrato": "1193142822",
       "nombre": "JIMENEZ ARIZA JOINER JAVIER"
+    },
+    {
+      "contrato": "1128104248",
+      "nombre": "JIMENEZ CASTELLAR VALERIA KARINA"
     },
     {
       "contrato": "11342042023",
@@ -422,7 +478,7 @@
       "nombre": "MENDOZA DE AVILA KEIDER JOSE"
     },
     {
-      "contrato": "1128109467",
+      "contrato": "11281094671",
       "nombre": "MENDOZA MENDOZA JESUS DAVID"
     },
     {
@@ -502,6 +558,10 @@
       "nombre": "MUÑOZ BERDUGO LUIS JAVIER"
     },
     {
+      "contrato": "1063947881",
+      "nombre": "MUÑOZ GUTIERREZ LUIS ALFONSO"
+    },
+    {
       "contrato": "1193068106",
       "nombre": "NAVARRO DE AVILA JUAN CARLOS"
     },
@@ -544,6 +604,10 @@
     {
       "contrato": "196011682",
       "nombre": "OROZCO MENDINUETA FRAY LUIS"
+    },
+    {
+      "contrato": "11310401051",
+      "nombre": "OROZCO SALCEDO RAFAEL ANTONIO"
     },
     {
       "contrato": "1065123812",
@@ -618,6 +682,14 @@
       "nombre": "PEDROZA OÑATE JESUS DAVID"
     },
     {
+      "contrato": "19602499",
+      "nombre": "PEÑALOZA SANCHEZ YESIR"
+    },
+    {
+      "contrato": "11281090511",
+      "nombre": "PEREA ARIZA ROBINSON ANTONIO"
+    },
+    {
       "contrato": "852901791",
       "nombre": "PEREZ TATIS JULIO CESAR"
     },
@@ -651,6 +723,10 @@
     },
     {
       "contrato": "11932188302",
+      "nombre": "PERTUZ SIERRA LEONEL ENRIQUE"
+    },
+    {
+      "contrato": "11932188303",
       "nombre": "PERTUZ SIERRA LEONEL ENRIQUE"
     },
     {
@@ -754,6 +830,10 @@
       "nombre": "RODRIGUEZ CERVANTES SAUL ALBERTO"
     },
     {
+      "contrato": "771667524",
+      "nombre": "RODRIGUEZ CERVANTES SAUL ALBERTO"
+    },
+    {
       "contrato": "1128105230",
       "nombre": "RODRIGUEZ RODRIGUEZ ROQUE JACINTO"
     },
@@ -802,6 +882,10 @@
       "nombre": "URIANA ARPUSHANA MARTIN"
     },
     {
+      "contrato": "195951551",
+      "nombre": "VALENCIA VIZCAINO HUMBERTO JOSE"
+    },
+    {
       "contrato": "11932114136",
       "nombre": "VARELA OSPINO DAVID ENRIQUE"
     },
@@ -827,6 +911,10 @@
     },
     {
       "contrato": "1193538182",
+      "nombre": "VIZCAINO DITA OMAR DAVID"
+    },
+    {
+      "contrato": "11935381825",
       "nombre": "VIZCAINO DITA OMAR DAVID"
     },
     {
