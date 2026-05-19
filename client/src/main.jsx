@@ -4,7 +4,8 @@ import axios from 'axios';
 import './index.css'
 import App from './App.jsx'
 
-axios.defaults.baseURL = 'https://serene-endurance-production-2b93.up.railway.app';
+// Usa la variable de entorno de Railway o la URL de producción como respaldo
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'https://serene-endurance-production-2b93.up.railway.app';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
