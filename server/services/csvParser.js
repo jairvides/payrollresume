@@ -36,7 +36,8 @@ const parsearMaestroEmpleados = (filePath) => {
     if (!contrato) continue;
     if (contratosVistos.has(contrato)) continue;
 
-    empleados.push({ contrato, nombre });
+    // Asignar estado activo por defecto
+    empleados.push({ contrato, nombre, status: 'activo' });
     contratosVistos.add(contrato);
   }
 

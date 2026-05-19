@@ -3,8 +3,10 @@ const router = express.Router();
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const xlsx = require('xlsx');
 const { parsearVigilancia, parsearNomina } = require('../services/excelParser');
 const { obtenerDiasLaborales } = require('../utils/dateUtils');
+const { calcularMatrizLaboral, generarCSVMatriz } = require('../services/matrixService');
 
 // Función para normalizar detalles (Ej: "RIEGO POR MELGAS 130 PALMAS" -> "RIEGO POR MELGAS")
 const normalizarDetalle = (detalle) => {
@@ -35,7 +37,7 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       return res.status(400).json({ error: 'Se requieren ambos archivos Excel' });
     }
 
-    const maestro = getMaestro();
+    const maestro = getMaestro().filter(e => e.status === 'activo');
     const vigRes = parsearVigilancia(req.files.vigilancia[0].path);
     const nomRes = parsearNomina(req.files.nomina[0].path);
     
@@ -135,6 +137,33 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       referencias: Array.from(refs).sort().join(', ')
     }));
 
+    // 7. MATRIZ LABORAL
+    const diasLaborales = (fechaInicio && fechaFin && anio) 
+      ? obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio)) 
+      : [];
+
+    const todosEmpleados = [];
+    maestro.forEach(emp => todosEmpleados.push({ contrato: emp.contrato, nombre: emp.nombre }));
+    
+    for (const contrato in acts) {
+      if (!contratosMaestro.has(contrato)) {
+        todosEmpleados.push({ 
+          contrato, 
+          nombre: actNames[contrato] || novNames[contrato] || 'Desconocido' 
+        });
+      }
+    }
+    for (const contrato in novs) {
+      if (!contratosMaestro.has(contrato) && !acts[contrato]) {
+        todosEmpleados.push({ 
+          contrato, 
+          nombre: novNames[contrato] || 'Desconocido' 
+        });
+      }
+    }
+
+    const matriz = calcularMatrizLaboral(todosEmpleados, diasLaborales, acts, novs);
+
     res.json({
       resumen: {
         total_conflictos: conflictos.length,
@@ -148,7 +177,9 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       inactivos,
       noRegistrados,
       multiples,
-      resumenDetalles
+      resumenDetalles,
+      matriz,
+      diasLaborales
     });
 
   } catch (error) {
@@ -157,4 +188,54 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
   }
 });
 
+router.post('/exportar-matriz', (req, res) => {
+  try {
+    const { result } = req.body;
+    if (!result || !result.matriz || !result.diasLaborales) {
+      return res.status(400).json({ error: 'Datos insuficientes para exportar la matriz' });
+    }
+
+    const csvContent = generarCSVMatriz(result.matriz, result.diasLaborales);
+    
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="matriz_laboral.csv"');
+    res.status(200).send(csvContent);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar el CSV de la matriz' });
+  }
+});
+
+router.post('/exportar', (req, res) => {
+  try {
+    const { result } = req.body;
+    if (!result) return res.status(400).json({ error: 'No se proporcionaron datos para exportar' });
+
+    const wb = xlsx.utils.book_new();
+
+    const sheets = [
+      { name: 'Conflictos', data: result.conflictos },
+      { name: 'Faltantes', data: result.faltantes },
+      { name: 'Inactivos', data: result.inactivos.map(i => ({ ...i, dias_faltantes: i.dias_faltantes.join(', ') })) },
+      { name: 'No Registrados', data: result.noRegistrados },
+      { name: 'Multiples Actividades', data: result.multiples.map(m => ({ ...m, actividades: m.actividades.join(', ') })) },
+      { name: 'Resumen Detalles', data: result.resumenDetalles },
+    ];
+
+    sheets.forEach(sheet => {
+      const ws = xlsx.utils.json_to_sheet(sheet.data);
+      xlsx.utils.book_append_sheet(wb, ws, sheet.name);
+    });
+
+    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename="auditoria.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar el archivo Excel' });
+  }
+});
+
 module.exports = router;
+

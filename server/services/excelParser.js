@@ -9,10 +9,32 @@ const normalizeKey = (key) =>
      .replace(/[\u0300-\u036f]/g, "")
      .trim();
 
+const validarColumnas = (headers, requerimientos) => {
+  const normHeaders = headers.map(h => normalizeKey(String(h)));
+  const faltantes = [];
+
+  requerimientos.forEach(req => {
+    const encontrada = normHeaders.some(h => req.variants.some(variant => h.includes(variant)));
+    if (!encontrada) faltantes.push(req.label);
+  });
+
+  if (faltantes.length > 0) {
+    throw new Error(`El archivo no tiene las columnas requeridas: ${faltantes.join(', ')}`);
+  }
+};
+
 const parsearVigilancia = (path) => {
   const wb = xlsx.readFile(path);
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const datos = xlsx.utils.sheet_to_json(sheet, { raw: false });
+  
+  if (datos.length === 0) throw new Error('El archivo de Vigilancia está vacío');
+
+  validarColumnas(Object.keys(datos[0]), [
+    { label: 'Contrato/Cédula', variants: ['CEDULA', 'CONTRATO'] },
+    { label: 'Motivo/Tipo', variants: ['MOT', 'TIPO'] },
+    { label: 'Fecha Inicio', variants: ['INICIO'] }
+  ]);
 
   const novedades = {}; 
   const names = {};
@@ -58,6 +80,14 @@ const parsearNomina = (path) => {
   const sheet = wb.Sheets[wb.SheetNames[0]];
   const datos = xlsx.utils.sheet_to_json(sheet, { raw: false });
 
+  if (datos.length === 0) throw new Error('El archivo de Nómina está vacío');
+
+  validarColumnas(Object.keys(datos[0]), [
+    { label: 'Contrato/Cédula', variants: ['CONTRATO', 'CEDULA'] },
+    { label: 'Fecha', variants: ['FECHA'] },
+    { label: 'Concepto/Detalle', variants: ['CONCEPTO', 'DETALLE', 'DESCRIPCION'] }
+  ]);
+
   const actividades = {}; 
   const names = {};
 
@@ -65,7 +95,7 @@ const parsearNomina = (path) => {
     const keys = Object.keys(fila).map(k => ({ original: k, norm: normalizeKey(k) }));
 
     const contratoKey = keys.find(k => k.norm.includes('CONTRATO') || k.norm.includes('CEDULA'))?.original;
-    const contrato = contratoKey ? String(fila[contratoKey] || '').trim() : '';
+    const contrato = normalizeContract(contratoKey ? fila[contratoKey] : '');
     
     const nombreKey = keys.find(k => k.norm.includes('NOMBRE'))?.original;
     const nombre = nombreKey ? String(fila[nombreKey] || '').trim() : '';

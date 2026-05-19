@@ -3,939 +3,1173 @@
   "empleados": [
     {
       "contrato": "1128104827",
-      "nombre": "ALFARO CAMARGO ARLEY ALEJANDRO"
+      "nombre": "ALFARO CAMARGO ARLEY ALEJANDRO",
+      "status": "activo"
     },
     {
       "contrato": "1193219009",
-      "nombre": "ALGARIN MOYA WUILLIAM ALBERTO"
+      "nombre": "ALGARIN MOYA WUILLIAM ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "19619861",
-      "nombre": "ALVAREZ PADILLA JUAN CARLOS"
+      "nombre": "ALVAREZ PADILLA JUAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "57272444",
-      "nombre": "ALVIS BARRIOS MILENA PATRICIA"
+      "nombre": "ALVIS BARRIOS MILENA PATRICIA",
+      "status": "activo"
     },
     {
       "contrato": "195982123",
-      "nombre": "ANAYA ANAYA JOSE ANGEL"
+      "nombre": "ANAYA ANAYA JOSE ANGEL",
+      "status": "activo"
     },
     {
       "contrato": "1193154681",
-      "nombre": "ARAGON TAMARA CARLOS ANDRES"
+      "nombre": "ARAGON TAMARA CARLOS ANDRES",
+      "status": "activo"
     },
     {
       "contrato": "10829328961",
-      "nombre": "AREVALO OSORIO YOHANA LISETH"
+      "nombre": "AREVALO OSORIO YOHANA LISETH",
+      "status": "activo"
     },
     {
       "contrato": "84077062",
-      "nombre": "ARPUSHANA CARLOS"
+      "nombre": "ARPUSHANA CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "77166634",
-      "nombre": "ARRIETA MARTINEZ LUIS ALBERTO"
+      "nombre": "ARRIETA MARTINEZ LUIS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "19602769",
-      "nombre": "BARRANCO ARIAS EDWIN ENRIQUE"
+      "nombre": "BARRANCO ARIAS EDWIN ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "1065123229",
-      "nombre": "BARRANCO CERPA ELIAS DAVID"
+      "nombre": "BARRANCO CERPA ELIAS DAVID",
+      "status": "activo"
     },
     {
       "contrato": "195902971",
-      "nombre": "BARRANCO OSPINO JOSE MARCELINO"
+      "nombre": "BARRANCO OSPINO JOSE MARCELINO",
+      "status": "activo"
     },
     {
       "contrato": "11281065801",
-      "nombre": "BARRIOS JIMENEZ FRAY LUIS"
+      "nombre": "BARRIOS JIMENEZ FRAY LUIS",
+      "status": "activo"
     },
     {
       "contrato": "1084729362",
-      "nombre": "BELTRAN VILLA DARWIN DAVID"
+      "nombre": "BELTRAN VILLA DARWIN DAVID",
+      "status": "activo"
     },
     {
       "contrato": "1193126015",
-      "nombre": "BENAVIDES MANOTAS NORIS ELENA"
+      "nombre": "BENAVIDES MANOTAS NORIS ELENA",
+      "status": "activo"
     },
     {
       "contrato": "1131005354",
-      "nombre": "BERDUGO MERCADO JHAN CARLOS"
+      "nombre": "BERDUGO MERCADO JHAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "1128106085",
-      "nombre": "BOLAÑO MERCADO EFRAIN JAVIER"
+      "nombre": "BOLAÑO MERCADO EFRAIN JAVIER",
+      "status": "activo"
     },
     {
       "contrato": "1065641354",
-      "nombre": "BUELVAS CASTRO VICTOR LUIS"
+      "nombre": "BUELVAS CASTRO VICTOR LUIS",
+      "status": "activo"
     },
     {
       "contrato": "852901601",
-      "nombre": "BURGOS ALEMAN YILMAR DE JESUS"
+      "nombre": "BURGOS ALEMAN YILMAR DE JESUS",
+      "status": "activo"
     },
     {
       "contrato": "11931334081",
-      "nombre": "CABARCAS GARCIA DANILO JAVIER"
+      "nombre": "CABARCAS GARCIA DANILO JAVIER",
+      "status": "activo"
     },
     {
       "contrato": "1007095248",
-      "nombre": "CABARCAS GARCIA FRANCISCO AVELARDO"
+      "nombre": "CABARCAS GARCIA FRANCISCO AVELARDO",
+      "status": "activo"
     },
     {
       "contrato": "11932123284",
-      "nombre": "CABARCAS MENDOZA FRANCISCO JOSE"
+      "nombre": "CABARCAS MENDOZA FRANCISCO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "195103671",
-      "nombre": "CABARCAS VERGARA TOMAS JOSE"
+      "nombre": "CABARCAS VERGARA TOMAS JOSE",
+      "status": "activo"
     },
     {
       "contrato": "11342042751",
-      "nombre": "CANTILLO  BARRANCO AMADO SEGUNDO"
+      "nombre": "CANTILLO  BARRANCO AMADO SEGUNDO",
+      "status": "activo"
     },
     {
       "contrato": "77168224",
-      "nombre": "CANTILLO CANTILLO DAVIER DAVID"
+      "nombre": "CANTILLO CANTILLO DAVIER DAVID",
+      "status": "activo"
     },
     {
       "contrato": "19619781",
-      "nombre": "CANTILLO ESCORCIA RAFAEL ANTONIO"
+      "nombre": "CANTILLO ESCORCIA RAFAEL ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "195921121",
-      "nombre": "CANTILLO FERNANDEZ PEDRO ANTONIO"
+      "nombre": "CANTILLO FERNANDEZ PEDRO ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "85290180",
-      "nombre": "CANTILLO LOPEZ PEDRO ENRIQUE"
+      "nombre": "CANTILLO LOPEZ PEDRO ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "1193219294",
-      "nombre": "CANTILLO MENDOZA YEISON DAVID"
+      "nombre": "CANTILLO MENDOZA YEISON DAVID",
+      "status": "activo"
     },
     {
       "contrato": "7603924",
-      "nombre": "CANTILLO MEZA CLEINER MANUEL"
+      "nombre": "CANTILLO MEZA CLEINER MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "1193140834",
-      "nombre": "CANTILLO MIRANDA CARLOS ANDRES"
+      "nombre": "CANTILLO MIRANDA CARLOS ANDRES",
+      "status": "activo"
     },
     {
       "contrato": "11281088502",
-      "nombre": "CANTILLO RODRIGUEZ JULIO ANDRES"
+      "nombre": "CANTILLO RODRIGUEZ JULIO ANDRES",
+      "status": "activo"
     },
     {
       "contrato": "195880601",
-      "nombre": "CANTILLO VERGARA RAFAEL ANTONIO"
+      "nombre": "CANTILLO VERGARA RAFAEL ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "1128105601",
-      "nombre": "CAÑA DE AVILA CARLOS SAMIR"
+      "nombre": "CAÑA DE AVILA CARLOS SAMIR",
+      "status": "activo"
     },
     {
       "contrato": "75972361",
-      "nombre": "CARRILLO GARCIA LISARDO SANTANDER"
+      "nombre": "CARRILLO GARCIA LISARDO SANTANDER",
+      "status": "activo"
     },
     {
       "contrato": "72210183",
-      "nombre": "CARRILLO RAMOS CARLOS ALBERTO"
+      "nombre": "CARRILLO RAMOS CARLOS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "11281095741",
-      "nombre": "CASTELLANO ACOSTA ALONSO MIGUEL"
+      "nombre": "CASTELLANO ACOSTA ALONSO MIGUEL",
+      "status": "activo"
     },
     {
       "contrato": "1134204290",
-      "nombre": "CASTELLANO CARRACEDO GLENIS MARIA"
+      "nombre": "CASTELLANO CARRACEDO GLENIS MARIA",
+      "status": "inactivo"
     },
     {
       "contrato": "1193211838",
-      "nombre": "CASTELLANO CARRACEDO JENIFFER"
+      "nombre": "CASTELLANO CARRACEDO JENIFFER",
+      "status": "activo"
     },
     {
       "contrato": "1193576502",
-      "nombre": "CASTRO ORDOÑEZ ARNULFO ALBERTO"
+      "nombre": "CASTRO ORDOÑEZ ARNULFO ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "1007929143",
-      "nombre": "CASTRO POLO CARLOS DAVID"
+      "nombre": "CASTRO POLO CARLOS DAVID",
+      "status": "activo"
     },
     {
       "contrato": "1193154680",
-      "nombre": "CASTRO POLO LUIS ENRIQUE"
+      "nombre": "CASTRO POLO LUIS ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "1131040993",
-      "nombre": "CATRILLO GAMEZ JOHAIDIS ANTONIO"
+      "nombre": "CATRILLO GAMEZ JOHAIDIS ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "11932188552",
-      "nombre": "CERVANTES CASTRO VANESSA PATRICIA"
-    },
-    {
-      "contrato": "1128104083",
-      "nombre": "CERVANTES MUÑOZ ANDRES DAVID"
+      "nombre": "CERVANTES CASTRO VANESSA PATRICIA",
+      "status": "activo"
     },
     {
       "contrato": "11281040831",
-      "nombre": "CERVANTES MUÑOZ ANDRES DAVID"
+      "nombre": "CERVANTES MUÑOZ ANDRES DAVID",
+      "status": "activo"
     },
     {
       "contrato": "19592207",
-      "nombre": "CERVANTES VALENCIA EVER LUIS"
+      "nombre": "CERVANTES VALENCIA EVER LUIS",
+      "status": "activo"
     },
     {
       "contrato": "195949781",
-      "nombre": "CERVANTES VALENCIA RICHARD ENRIQUE"
+      "nombre": "CERVANTES VALENCIA RICHARD ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "19604486",
-      "nombre": "CHARRIS CASTRO JAIDER ENRIQUE"
+      "nombre": "CHARRIS CASTRO JAIDER ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "195982053",
-      "nombre": "CHARRIS CASTRO PEDRO JOSE"
+      "nombre": "CHARRIS CASTRO PEDRO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "11931415601",
-      "nombre": "CHARRIS RODRIGUEZ ROBERTO CARLOS"
+      "nombre": "CHARRIS RODRIGUEZ ROBERTO CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "852622151",
-      "nombre": "CONTRERAS SALCEDO ALVARO RAFAEL"
+      "nombre": "CONTRERAS SALCEDO ALVARO RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "195952111",
-      "nombre": "CRESPO GARCIA MIGUEL ARCANGEL"
+      "nombre": "CRESPO GARCIA MIGUEL ARCANGEL",
+      "status": "activo"
     },
     {
       "contrato": "19596842",
-      "nombre": "CRESPO VALENCIA NIBALDO ANTONIO"
+      "nombre": "CRESPO VALENCIA NIBALDO ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "7716586812",
-      "nombre": "DE AGUAS ARIZA JAIRO ENRIQUE"
+      "nombre": "DE AGUAS ARIZA JAIRO ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "195907473",
-      "nombre": "DE AVILA RIVERA JAIRO RAFAEL"
+      "nombre": "DE AVILA RIVERA JAIRO RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "1193127906",
-      "nombre": "DE AVILA TORRIJO SAMUEL DAVID"
+      "nombre": "DE AVILA TORRIJO SAMUEL DAVID",
+      "status": "activo"
     },
     {
       "contrato": "1193285054",
-      "nombre": "DELGAN CASTRILLO OMAR YESITH"
+      "nombre": "DELGAN CASTRILLO OMAR YESITH",
+      "status": "activo"
     },
     {
       "contrato": "1128106269",
-      "nombre": "DIAZ DE AVILA CRISTIAN DANIEL"
+      "nombre": "DIAZ DE AVILA CRISTIAN DANIEL",
+      "status": "activo"
     },
     {
       "contrato": "11281041401",
-      "nombre": "DITA BERNATE JORGE LUIS"
+      "nombre": "DITA BERNATE JORGE LUIS",
+      "status": "activo"
     },
     {
       "contrato": "86382431",
-      "nombre": "DITA IGLESIAS ANGEL"
+      "nombre": "DITA IGLESIAS ANGEL",
+      "status": "activo"
     },
     {
       "contrato": "195968181",
-      "nombre": "ENTRENA SALGADO LUIS FERNANDO"
+      "nombre": "ENTRENA SALGADO LUIS FERNANDO",
+      "status": "activo"
     },
     {
       "contrato": "10818027141",
-      "nombre": "ESCANDON ALTAMAR ANDRES FRANCISCO"
+      "nombre": "ESCANDON ALTAMAR ANDRES FRANCISCO",
+      "status": "activo"
     },
     {
       "contrato": "195940161",
-      "nombre": "ESCORCIA GARCIA JAIME  MANUEL"
+      "nombre": "ESCORCIA GARCIA JAIME  MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "771663711",
-      "nombre": "ESTRADA PERTUZ LUIS ALBERTO"
+      "nombre": "ESTRADA PERTUZ LUIS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "195888171",
-      "nombre": "FABIAN PABON FELIX ANTONIO"
+      "nombre": "FABIAN PABON FELIX ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "127037371",
-      "nombre": "FABIAN PABON GERMAN ELIAS"
+      "nombre": "FABIAN PABON GERMAN ELIAS",
+      "status": "activo"
     },
     {
       "contrato": "84077270",
-      "nombre": "FINCE ARPUSHANA ALBERTO"
+      "nombre": "FINCE ARPUSHANA ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "17948898",
-      "nombre": "FINCE ARPUSHANA JAIDER"
+      "nombre": "FINCE ARPUSHANA JAIDER",
+      "status": "activo"
     },
     {
       "contrato": "1079912747",
-      "nombre": "FONTALVO PERTUZ VICTOR MANUEL"
+      "nombre": "FONTALVO PERTUZ VICTOR MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "85290136",
-      "nombre": "GALVAN TEJEDA WUILSON JESUS"
+      "nombre": "GALVAN TEJEDA WUILSON JESUS",
+      "status": "activo"
     },
     {
       "contrato": "1084735587",
-      "nombre": "GAMERO TORRES ALVARO RAMON"
+      "nombre": "GAMERO TORRES ALVARO RAMON",
+      "status": "activo"
     },
     {
       "contrato": "1128110681",
-      "nombre": "GARCERAN CABARCAS DEINER FARID"
+      "nombre": "GARCERAN CABARCAS DEINER FARID",
+      "status": "activo"
     },
     {
       "contrato": "195905541",
-      "nombre": "GARCERAN CAMACHO JULIO DOMINGO"
+      "nombre": "GARCERAN CAMACHO JULIO DOMINGO",
+      "status": "activo"
     },
     {
       "contrato": "10031982332",
-      "nombre": "GARCIA BARRANCO CRISTIAN RAFAEL"
+      "nombre": "GARCIA BARRANCO CRISTIAN RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "11281049831",
-      "nombre": "GARCIA CANTILLO MATIAS JOSE"
+      "nombre": "GARCIA CANTILLO MATIAS JOSE",
+      "status": "activo"
     },
     {
       "contrato": "771665103",
-      "nombre": "GARCIA GARCIA RAFAEL MARIA"
+      "nombre": "GARCIA GARCIA RAFAEL MARIA",
+      "status": "activo"
     },
     {
       "contrato": "195986601",
-      "nombre": "GARCIA GUZMAN WILFRIDO RAFAEL"
+      "nombre": "GARCIA GUZMAN WILFRIDO RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "10079290891",
-      "nombre": "GONZALEZ BERRIO YORLEDIS TAILITH"
+      "nombre": "GONZALEZ BERRIO YORLEDIS TAILITH",
+      "status": "activo"
     },
     {
       "contrato": "19602023",
-      "nombre": "GONZALEZ MARTINEZ JARRINSON ALFONSO"
+      "nombre": "GONZALEZ MARTINEZ JARRINSON ALFONSO",
+      "status": "activo"
     },
     {
       "contrato": "195998631",
-      "nombre": "GONZALEZ NOCHE WILMER ALFONSO"
+      "nombre": "GONZALEZ NOCHE WILMER ALFONSO",
+      "status": "activo"
     },
     {
       "contrato": "853804321",
-      "nombre": "GONZALEZ NOCHES BENJAMIN ANTONIO"
+      "nombre": "GONZALEZ NOCHES BENJAMIN ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "1065138960",
-      "nombre": "GUERRERO VERGARA JESUS MANUEL"
+      "nombre": "GUERRERO VERGARA JESUS MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "1065132548",
-      "nombre": "GUERRERO VERGARA LUIS EDUARDO"
+      "nombre": "GUERRERO VERGARA LUIS EDUARDO",
+      "status": "activo"
     },
     {
       "contrato": "11281053882",
-      "nombre": "GUTIERREZ MARTINEZ ALJEDIS MIGUEL"
+      "nombre": "GUTIERREZ MARTINEZ ALJEDIS MIGUEL",
+      "status": "activo"
     },
     {
       "contrato": "1128186055",
-      "nombre": "GUTIERREZ PEDROZA JORGE LUIS"
+      "nombre": "GUTIERREZ PEDROZA JORGE LUIS",
+      "status": "activo"
     },
     {
       "contrato": "1128106991",
-      "nombre": "HERNANDEZ MEDINA JOAN CARLOS"
+      "nombre": "HERNANDEZ MEDINA JOAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "1128104125",
-      "nombre": "HERRERA DIAZ CARLOS ENRIQUE"
+      "nombre": "HERRERA DIAZ CARLOS ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "179724621",
-      "nombre": "IGUARAN  AVILA NESTOR SEGUNDO"
+      "nombre": "IGUARAN  AVILA NESTOR SEGUNDO",
+      "status": "activo"
     },
     {
       "contrato": "1123416869",
-      "nombre": "IPUANA IPUANA EDINSON MANUEL"
+      "nombre": "IPUANA IPUANA EDINSON MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "11281062073",
-      "nombre": "ISMAEL LOPEZ LUIS ALBERTO"
+      "nombre": "ISMAEL LOPEZ LUIS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "11281097471",
-      "nombre": "JIMENEZ ARIZA JENNIFER JOHANA"
+      "nombre": "JIMENEZ ARIZA JENNIFER JOHANA",
+      "status": "activo"
     },
     {
       "contrato": "1193142822",
-      "nombre": "JIMENEZ ARIZA JOINER JAVIER"
+      "nombre": "JIMENEZ ARIZA JOINER JAVIER",
+      "status": "activo"
     },
     {
       "contrato": "1128104248",
-      "nombre": "JIMENEZ CASTELLAR VALERIA KARINA"
+      "nombre": "JIMENEZ CASTELLAR VALERIA KARINA",
+      "status": "activo"
     },
     {
       "contrato": "11342042023",
-      "nombre": "JIMENEZ ESCORCIA JAIME LUIS"
+      "nombre": "JIMENEZ ESCORCIA JAIME LUIS",
+      "status": "activo"
     },
     {
       "contrato": "77170450",
-      "nombre": "JIMENEZ MOJICA JUAN AGUSTIN"
+      "nombre": "JIMENEZ MOJICA JUAN AGUSTIN",
+      "status": "activo"
     },
     {
       "contrato": "1081819970",
-      "nombre": "JIMENEZ MOLINARES DINA LUZ"
+      "nombre": "JIMENEZ MOLINARES DINA LUZ",
+      "status": "activo"
     },
     {
       "contrato": "1128106227",
-      "nombre": "JIMENEZ PEREZ DEIBER JOSE"
+      "nombre": "JIMENEZ PEREZ DEIBER JOSE",
+      "status": "activo"
     },
     {
       "contrato": "1193219583",
-      "nombre": "JIMENEZ POLO WELSER ENRIQUE"
+      "nombre": "JIMENEZ POLO WELSER ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "1151187355",
-      "nombre": "JIMENEZ RODRIGUEZ CRISTIAN JESUS"
+      "nombre": "JIMENEZ RODRIGUEZ CRISTIAN JESUS",
+      "status": "activo"
     },
     {
       "contrato": "19596054",
-      "nombre": "JIMENEZ RUIZ UBALDO ENRIQUE"
+      "nombre": "JIMENEZ RUIZ UBALDO ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "1128107546",
-      "nombre": "JIMENEZ VALENCIA ALVARO JOSE"
+      "nombre": "JIMENEZ VALENCIA ALVARO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "85290076",
-      "nombre": "JIMENEZ VALENCIA LUIS JAVIER"
+      "nombre": "JIMENEZ VALENCIA LUIS JAVIER",
+      "status": "activo"
     },
     {
       "contrato": "12448339",
-      "nombre": "JIMENEZ VARELA ANTONIO ENRIQUE"
+      "nombre": "JIMENEZ VARELA ANTONIO ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "1151456577",
-      "nombre": "JUSAYU SALVADOR"
+      "nombre": "JUSAYU SALVADOR",
+      "status": "activo"
     },
     {
       "contrato": "127037361",
-      "nombre": "LARA ESPAÑA JUAN"
+      "nombre": "LARA ESPAÑA JUAN",
+      "status": "activo"
     },
     {
       "contrato": "196016001",
-      "nombre": "LARA VALDEZ FABIO"
+      "nombre": "LARA VALDEZ FABIO",
+      "status": "activo"
     },
     {
       "contrato": "57270890",
-      "nombre": "MADRID FONSECA DIOCELINA DEL SOCORRO"
+      "nombre": "MADRID FONSECA DIOCELINA DEL SOCORRO",
+      "status": "activo"
     },
     {
       "contrato": "11281101131",
-      "nombre": "MADRID PEREZ BRAYAN JOSE"
+      "nombre": "MADRID PEREZ BRAYAN JOSE",
+      "status": "activo"
     },
     {
       "contrato": "1081026016",
-      "nombre": "MANJARRES NAVARRO DAVID ALFONSO"
+      "nombre": "MANJARRES NAVARRO DAVID ALFONSO",
+      "status": "activo"
     },
     {
       "contrato": "19601585",
-      "nombre": "MARTINEZ OROZCO CARLOS MARIO"
+      "nombre": "MARTINEZ OROZCO CARLOS MARIO",
+      "status": "activo"
     },
     {
       "contrato": "1065138852",
-      "nombre": "MARTINEZ OROZCO DIEGO ARMANDO"
+      "nombre": "MARTINEZ OROZCO DIEGO ARMANDO",
+      "status": "activo"
     },
     {
       "contrato": "127037211",
-      "nombre": "MARTINEZ PARODIS PEDRO MANUEL"
+      "nombre": "MARTINEZ PARODIS PEDRO MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "7636550",
-      "nombre": "MATOSO MARTINEZ RAMON DE JESUS"
+      "nombre": "MATOSO MARTINEZ RAMON DE JESUS",
+      "status": "activo"
     },
     {
       "contrato": "1128104868",
-      "nombre": "MAZA VERGARA BENJAMIN"
+      "nombre": "MAZA VERGARA BENJAMIN",
+      "status": "activo"
     },
     {
       "contrato": "1128105334",
-      "nombre": "MENDINUETA BENAVIDES CARLOS ARTURO"
+      "nombre": "MENDINUETA BENAVIDES CARLOS ARTURO",
+      "status": "activo"
     },
     {
       "contrato": "1128106782",
-      "nombre": "MENDINUETA MAESTRE ARMANDO LUIS"
+      "nombre": "MENDINUETA MAESTRE ARMANDO LUIS",
+      "status": "activo"
     },
     {
       "contrato": "1193219020",
-      "nombre": "MENDOZA DE AVILA JORGE LUIS"
+      "nombre": "MENDOZA DE AVILA JORGE LUIS",
+      "status": "activo"
     },
     {
       "contrato": "1193133417",
-      "nombre": "MENDOZA DE AVILA KEIDER JOSE"
+      "nombre": "MENDOZA DE AVILA KEIDER JOSE",
+      "status": "activo"
     },
     {
       "contrato": "11281094671",
-      "nombre": "MENDOZA MENDOZA JESUS DAVID"
+      "nombre": "MENDOZA MENDOZA JESUS DAVID",
+      "status": "activo"
     },
     {
       "contrato": "1193133960",
-      "nombre": "MERCADO RODRIGUEZ ELKIN ALFONSO"
+      "nombre": "MERCADO RODRIGUEZ ELKIN ALFONSO",
+      "status": "activo"
     },
     {
       "contrato": "1081819320",
-      "nombre": "MEZA ACOSTA WALTER JOSE"
+      "nombre": "MEZA ACOSTA WALTER JOSE",
+      "status": "activo"
     },
     {
       "contrato": "11932192201",
-      "nombre": "MEZA GARCIA EDINSON RAFAEL"
+      "nombre": "MEZA GARCIA EDINSON RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "11934378521",
-      "nombre": "MEZA MENCO LUIS FELIPE"
+      "nombre": "MEZA MENCO LUIS FELIPE",
+      "status": "activo"
     },
     {
       "contrato": "11281087871",
-      "nombre": "MIRANDA DE LA CERDA ARAMIS MANUEL"
+      "nombre": "MIRANDA DE LA CERDA ARAMIS MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "10658181841",
-      "nombre": "MIRANDA LOPEZ ANDRES FELIPE"
+      "nombre": "MIRANDA LOPEZ ANDRES FELIPE",
+      "status": "activo"
     },
     {
       "contrato": "195991841",
-      "nombre": "MIRANDA MEZA MIGUEL ANTONIO"
+      "nombre": "MIRANDA MEZA MIGUEL ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "11932114042",
-      "nombre": "MIRANDA PABOLA JOSE CARLOS"
+      "nombre": "MIRANDA PABOLA JOSE CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "1193127524",
-      "nombre": "MIRANDA PALLARES LUIS MIGUEL"
+      "nombre": "MIRANDA PALLARES LUIS MIGUEL",
+      "status": "activo"
     },
     {
       "contrato": "195952071",
-      "nombre": "MOLINA CORONADO CIGISFREDO"
+      "nombre": "MOLINA CORONADO CIGISFREDO",
+      "status": "activo"
     },
     {
       "contrato": "195967871",
-      "nombre": "MOLINA CORONADO FREDI EDUARDO"
+      "nombre": "MOLINA CORONADO FREDI EDUARDO",
+      "status": "activo"
     },
     {
       "contrato": "10077730503",
-      "nombre": "MOLINA PIÑA EDUARDO JOSE"
+      "nombre": "MOLINA PIÑA EDUARDO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "85290062",
-      "nombre": "MORA REYES RIGO JAIDER"
+      "nombre": "MORA REYES RIGO JAIDER",
+      "status": "activo"
     },
     {
       "contrato": "1193133627",
-      "nombre": "MORA REYES YERSON ESNEIDER"
+      "nombre": "MORA REYES YERSON ESNEIDER",
+      "status": "activo"
     },
     {
       "contrato": "85290134",
-      "nombre": "MORALES BARRANCO JUAN  CARLOS"
+      "nombre": "MORALES BARRANCO JUAN  CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "100427300941",
-      "nombre": "MORALES ECHAVARRIA JEAN CARLOS"
+      "nombre": "MORALES ECHAVARRIA JEAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "195898421",
-      "nombre": "MOVILLA DE AVILA CARLOS CRISTOBAL"
+      "nombre": "MOVILLA DE AVILA CARLOS CRISTOBAL",
+      "status": "activo"
     },
     {
       "contrato": "195947041",
-      "nombre": "MOVILLA DE AVILA GENITO ANTONIO"
+      "nombre": "MOVILLA DE AVILA GENITO ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "195994191",
-      "nombre": "MUÑOZ BERDUGO LUIS JAVIER"
+      "nombre": "MUÑOZ BERDUGO LUIS JAVIER",
+      "status": "activo"
     },
     {
       "contrato": "1063947881",
-      "nombre": "MUÑOZ GUTIERREZ LUIS ALFONSO"
+      "nombre": "MUÑOZ GUTIERREZ LUIS ALFONSO",
+      "status": "activo"
     },
     {
       "contrato": "1193068106",
-      "nombre": "NAVARRO DE AVILA JUAN CARLOS"
+      "nombre": "NAVARRO DE AVILA JUAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "572000542",
-      "nombre": "NIETO ORTEGA CLAUDIA PATRICIA"
+      "nombre": "NIETO ORTEGA CLAUDIA PATRICIA",
+      "status": "activo"
     },
     {
       "contrato": "1065124272",
-      "nombre": "OCHOA GUTIERREZ CARLOS ALBERTO"
+      "nombre": "OCHOA GUTIERREZ CARLOS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "19595727",
-      "nombre": "OCHOA VALENCIA RAMON MANUEL"
+      "nombre": "OCHOA VALENCIA RAMON MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "19594052",
-      "nombre": "OLIVAREZ DIAZ NISON RAFAEL"
+      "nombre": "OLIVAREZ DIAZ NISON RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "197080432",
-      "nombre": "OLIVEROS RODRIGUEZ JOSE LUIS"
+      "nombre": "OLIVEROS RODRIGUEZ JOSE LUIS",
+      "status": "activo"
     },
     {
       "contrato": "1193584618",
-      "nombre": "OROZCO CRESPO ALBA PATRICIA"
+      "nombre": "OROZCO CRESPO ALBA PATRICIA",
+      "status": "activo"
     },
     {
       "contrato": "85479117",
-      "nombre": "OROZCO GUTIERREZ WUILSON RAFAEL"
+      "nombre": "OROZCO GUTIERREZ WUILSON RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "11932105881",
-      "nombre": "OROZCO LARA LUIS FELIPE"
+      "nombre": "OROZCO LARA LUIS FELIPE",
+      "status": "activo"
     },
     {
       "contrato": "10651396241",
-      "nombre": "OROZCO LUGO JHAN CARLOS"
+      "nombre": "OROZCO LUGO JHAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "196011682",
-      "nombre": "OROZCO MENDINUETA FRAY LUIS"
+      "nombre": "OROZCO MENDINUETA FRAY LUIS",
+      "status": "activo"
     },
     {
       "contrato": "11310401051",
-      "nombre": "OROZCO SALCEDO RAFAEL ANTONIO"
+      "nombre": "OROZCO SALCEDO RAFAEL ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "1065123812",
-      "nombre": "ORTEGA ARIZA JAIRO ENRIQUE"
+      "nombre": "ORTEGA ARIZA JAIRO ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "19562671",
-      "nombre": "ORTEGA BALDONADO DOMINGO"
+      "nombre": "ORTEGA BALDONADO DOMINGO",
+      "status": "activo"
     },
     {
       "contrato": "9876628",
-      "nombre": "ORTIZ GARCIA RENILFO MANUEL"
+      "nombre": "ORTIZ GARCIA RENILFO MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "1079911799",
-      "nombre": "ORTIZ RODRIGUEZ FELIX DAVID"
+      "nombre": "ORTIZ RODRIGUEZ FELIX DAVID",
+      "status": "activo"
     },
     {
       "contrato": "195879171",
-      "nombre": "OTERO CASTILLO JUAN FRANCISCO"
+      "nombre": "OTERO CASTILLO JUAN FRANCISCO",
+      "status": "activo"
     },
     {
       "contrato": "1193067476",
-      "nombre": "OTERO MANOTAS JESUS ALBERTO"
+      "nombre": "OTERO MANOTAS JESUS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "11932188745",
-      "nombre": "OYOLA MADRID JULIO CESAR"
+      "nombre": "OYOLA MADRID JULIO CESAR",
+      "status": "activo"
     },
     {
       "contrato": "11281090663",
-      "nombre": "OYOLA MADRID LUIS DAVID"
+      "nombre": "OYOLA MADRID LUIS DAVID",
+      "status": "activo"
     },
     {
       "contrato": "196163901",
-      "nombre": "OYOLA VILLA DAVID ANTONIO"
+      "nombre": "OYOLA VILLA DAVID ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "195890201",
-      "nombre": "PACHECO ALEMAN JOSE LUIS"
+      "nombre": "PACHECO ALEMAN JOSE LUIS",
+      "status": "activo"
     },
     {
       "contrato": "572001331",
-      "nombre": "PADILLA JIMENEZ LUZ MARINA"
+      "nombre": "PADILLA JIMENEZ LUZ MARINA",
+      "status": "activo"
     },
     {
       "contrato": "1128105128",
-      "nombre": "PADILLA TORRES JUAN JOSE"
+      "nombre": "PADILLA TORRES JUAN JOSE",
+      "status": "activo"
     },
     {
       "contrato": "195983111",
-      "nombre": "PALMERA PALMA JORGE MARIO"
+      "nombre": "PALMERA PALMA JORGE MARIO",
+      "status": "activo"
     },
     {
       "contrato": "75941581",
-      "nombre": "PALMERA SIERRA JUAN DE DIOS"
+      "nombre": "PALMERA SIERRA JUAN DE DIOS",
+      "status": "activo"
     },
     {
       "contrato": "196134131",
-      "nombre": "PARRA POLO JAIRO ENRIQUE"
+      "nombre": "PARRA POLO JAIRO ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "195917041",
-      "nombre": "PEDRAZA CLAROS EFRAIN"
+      "nombre": "PEDRAZA CLAROS EFRAIN",
+      "status": "activo"
     },
     {
       "contrato": "195905681",
-      "nombre": "PEDROZA MONTENEGRO ERAZMO RAFAEL"
+      "nombre": "PEDROZA MONTENEGRO ERAZMO RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "1128104321",
-      "nombre": "PEDROZA OÑATE JESUS DAVID"
+      "nombre": "PEDROZA OÑATE JESUS DAVID",
+      "status": "activo"
     },
     {
       "contrato": "19602499",
-      "nombre": "PEÑALOZA SANCHEZ YESIR"
+      "nombre": "PEÑALOZA SANCHEZ YESIR",
+      "status": "activo"
     },
     {
       "contrato": "11281090511",
-      "nombre": "PEREA ARIZA ROBINSON ANTONIO"
+      "nombre": "PEREA ARIZA ROBINSON ANTONIO",
+      "status": "activo"
     },
     {
       "contrato": "852901791",
-      "nombre": "PEREZ TATIS JULIO CESAR"
+      "nombre": "PEREZ TATIS JULIO CESAR",
+      "status": "activo"
     },
     {
       "contrato": "11281063262",
-      "nombre": "PEREZ TERNERA DARIO JOSE"
+      "nombre": "PEREZ TERNERA DARIO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "771660711",
-      "nombre": "PEREZ TERNERA MANUEL SALVADOR"
+      "nombre": "PEREZ TERNERA MANUEL SALVADOR",
+      "status": "activo"
     },
     {
       "contrato": "11281082232",
-      "nombre": "PEREZ VERGARA CARLOS ANDRES"
+      "nombre": "PEREZ VERGARA CARLOS ANDRES",
+      "status": "activo"
     },
     {
       "contrato": "11931415814",
-      "nombre": "PERTUZ PADILLA CARLOS ANDRES"
+      "nombre": "PERTUZ PADILLA CARLOS ANDRES",
+      "status": "activo"
     },
     {
       "contrato": "1128105269",
-      "nombre": "PERTUZ PADILLA JUAN CAMILO"
+      "nombre": "PERTUZ PADILLA JUAN CAMILO",
+      "status": "activo"
     },
     {
       "contrato": "195986401",
-      "nombre": "PERTUZ ROJANO JUAN CARLOS"
+      "nombre": "PERTUZ ROJANO JUAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "1193219499",
-      "nombre": "PERTUZ SIERRA GEOVANY RAFAEL"
+      "nombre": "PERTUZ SIERRA GEOVANY RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "11932188302",
-      "nombre": "PERTUZ SIERRA LEONEL ENRIQUE"
+      "nombre": "PERTUZ SIERRA LEONEL ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "11932188303",
-      "nombre": "PERTUZ SIERRA LEONEL ENRIQUE"
+      "nombre": "PERTUZ SIERRA LEONEL ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "10031978731",
-      "nombre": "PLATA PADILLA HUGO HERNESTO"
+      "nombre": "PLATA PADILLA HUGO HERNESTO",
+      "status": "activo"
     },
     {
       "contrato": "11281047631",
-      "nombre": "PLATA PADILLA JOSE DE JESUS"
+      "nombre": "PLATA PADILLA JOSE DE JESUS",
+      "status": "activo"
     },
     {
       "contrato": "1193133416",
-      "nombre": "POLO BOLAÑO JESUS DAVID"
+      "nombre": "POLO BOLAÑO JESUS DAVID",
+      "status": "activo"
     },
     {
       "contrato": "11931387932",
-      "nombre": "POLO BOLAÑO JULIO MIGUEL"
+      "nombre": "POLO BOLAÑO JULIO MIGUEL",
+      "status": "activo"
     },
     {
       "contrato": "11931334231",
-      "nombre": "POLO BOLAÑO PABLO JOSE"
+      "nombre": "POLO BOLAÑO PABLO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "195911841",
-      "nombre": "POLO CASTRO ALBERTO LUIS"
+      "nombre": "POLO CASTRO ALBERTO LUIS",
+      "status": "activo"
     },
     {
       "contrato": "11932190272",
-      "nombre": "POLO JULIO JULIO RAFAEL"
+      "nombre": "POLO JULIO JULIO RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "1081786787",
-      "nombre": "POLO PERTUZ EDGAR ALEXANDER"
+      "nombre": "POLO PERTUZ EDGAR ALEXANDER",
+      "status": "activo"
     },
     {
       "contrato": "771673431",
-      "nombre": "POLO PERTUZ JOSE FRANCISCO"
+      "nombre": "POLO PERTUZ JOSE FRANCISCO",
+      "status": "activo"
     },
     {
       "contrato": "195950751",
-      "nombre": "POLO TAPIA LEANDRO"
+      "nombre": "POLO TAPIA LEANDRO",
+      "status": "activo"
     },
     {
       "contrato": "77166522",
-      "nombre": "POLO TAPIA WILFRIDO RAFAEL"
+      "nombre": "POLO TAPIA WILFRIDO RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "1134204057",
-      "nombre": "POLO TAPIAS WILLIAN ENRIQUE"
+      "nombre": "POLO TAPIAS WILLIAN ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "1193218840",
-      "nombre": "POTES LOPEZ JOSE LUIS"
+      "nombre": "POTES LOPEZ JOSE LUIS",
+      "status": "activo"
     },
     {
       "contrato": "11281085834",
-      "nombre": "PUELLO CANTILLO DAIRO JOSE"
+      "nombre": "PUELLO CANTILLO DAIRO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "51771351",
-      "nombre": "PUSHAINA EPIEYU LORENZO"
+      "nombre": "PUSHAINA EPIEYU LORENZO",
+      "status": "activo"
     },
     {
       "contrato": "1128105771",
-      "nombre": "QUIROZ GOMEZ FRANK DAVID"
+      "nombre": "QUIROZ GOMEZ FRANK DAVID",
+      "status": "activo"
     },
     {
       "contrato": "11281119912",
-      "nombre": "REYES JIMENEZ DIEGO ANDRES"
+      "nombre": "REYES JIMENEZ DIEGO ANDRES",
+      "status": "activo"
     },
     {
       "contrato": "11281069341",
-      "nombre": "REYES LEONES JAIME LUIS"
+      "nombre": "REYES LEONES JAIME LUIS",
+      "status": "activo"
     },
     {
       "contrato": "11932188631",
-      "nombre": "REYES LEONES JUAN CARLOS"
+      "nombre": "REYES LEONES JUAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "1007095283",
-      "nombre": "REYES OSPINO CARLOS JOSE"
+      "nombre": "REYES OSPINO CARLOS JOSE",
+      "status": "activo"
     },
     {
       "contrato": "852900511",
-      "nombre": "REYES RODRIGUEZ ANDRES EMILIO"
+      "nombre": "REYES RODRIGUEZ ANDRES EMILIO",
+      "status": "activo"
     },
     {
       "contrato": "196004431",
-      "nombre": "REYES RODRIGUEZ HECTOR RUBIEL"
+      "nombre": "REYES RODRIGUEZ HECTOR RUBIEL",
+      "status": "activo"
     },
     {
       "contrato": "1128106167",
-      "nombre": "RODRIGUEZ AHUMADA CARLOS ALBERTO"
+      "nombre": "RODRIGUEZ AHUMADA CARLOS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "10651252022",
-      "nombre": "RODRIGUEZ CERVANTES JORGE ALBERTO"
+      "nombre": "RODRIGUEZ CERVANTES JORGE ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "771667523",
-      "nombre": "RODRIGUEZ CERVANTES SAUL ALBERTO"
+      "nombre": "RODRIGUEZ CERVANTES SAUL ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "771667524",
-      "nombre": "RODRIGUEZ CERVANTES SAUL ALBERTO"
+      "nombre": "RODRIGUEZ CERVANTES SAUL ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "1128105230",
-      "nombre": "RODRIGUEZ RODRIGUEZ ROQUE JACINTO"
+      "nombre": "RODRIGUEZ RODRIGUEZ ROQUE JACINTO",
+      "status": "activo"
     },
     {
       "contrato": "1193593333",
-      "nombre": "RUDA SIERRA EDINSON MANUEL"
+      "nombre": "RUDA SIERRA EDINSON MANUEL",
+      "status": "activo"
     },
     {
       "contrato": "77165358",
-      "nombre": "RUDAS CALVO EZEQUIEL"
+      "nombre": "RUDAS CALVO EZEQUIEL",
+      "status": "activo"
     },
     {
       "contrato": "1193043710",
-      "nombre": "SARMIENTO PIÑA HAROLD DAVID"
+      "nombre": "SARMIENTO PIÑA HAROLD DAVID",
+      "status": "activo"
     },
     {
       "contrato": "196204381",
-      "nombre": "SILVA TAPIAS CALIXTO JOSE"
+      "nombre": "SILVA TAPIAS CALIXTO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "126259671",
-      "nombre": "SILVA TAPIAS JORGE ENRIQUE"
+      "nombre": "SILVA TAPIAS JORGE ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "124105361",
-      "nombre": "TATI CABARCAS ENOC SENEN"
+      "nombre": "TATI CABARCAS ENOC SENEN",
+      "status": "inactivo"
     },
     {
       "contrato": "10651339271",
-      "nombre": "TATI DE LA ROSA ENOC SENEN"
+      "nombre": "TATI DE LA ROSA ENOC SENEN",
+      "status": "activo"
     },
     {
       "contrato": "19599883",
-      "nombre": "TOVAR PATIÑO EDWIN HERNAN"
+      "nombre": "TOVAR PATIÑO EDWIN HERNAN",
+      "status": "activo"
     },
     {
       "contrato": "84107580",
-      "nombre": "URIANA ABSHANA RAFAEL"
+      "nombre": "URIANA ABSHANA RAFAEL",
+      "status": "activo"
     },
     {
       "contrato": "84107151",
-      "nombre": "URIANA ARPUSHANA JUAN"
+      "nombre": "URIANA ARPUSHANA JUAN",
+      "status": "activo"
     },
     {
       "contrato": "84108624",
-      "nombre": "URIANA ARPUSHANA MARTIN"
+      "nombre": "URIANA ARPUSHANA MARTIN",
+      "status": "activo"
     },
     {
       "contrato": "195951551",
-      "nombre": "VALENCIA VIZCAINO HUMBERTO JOSE"
+      "nombre": "VALENCIA VIZCAINO HUMBERTO JOSE",
+      "status": "activo"
     },
     {
       "contrato": "11932114136",
-      "nombre": "VARELA OSPINO DAVID ENRIQUE"
+      "nombre": "VARELA OSPINO DAVID ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "195844081",
-      "nombre": "VASQUEZ PLAZAS LUIS ALBERTO"
+      "nombre": "VASQUEZ PLAZAS LUIS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "11342043811",
-      "nombre": "VERGARA GONZALEZ JUAN CARLOS"
+      "nombre": "VERGARA GONZALEZ JUAN CARLOS",
+      "status": "activo"
     },
     {
       "contrato": "1128105341",
-      "nombre": "VIDES BERDUGO JAIR ENRIQUE"
+      "nombre": "VIDES BERDUGO JAIR ENRIQUE",
+      "status": "activo"
     },
     {
       "contrato": "195967011",
-      "nombre": "VILLA CALVO EDWIN JESUS"
+      "nombre": "VILLA CALVO EDWIN JESUS",
+      "status": "activo"
     },
     {
       "contrato": "85261916",
-      "nombre": "VILORIA SERPA YESID JOSE"
+      "nombre": "VILORIA SERPA YESID JOSE",
+      "status": "activo"
     },
     {
       "contrato": "1193538182",
-      "nombre": "VIZCAINO DITA OMAR DAVID"
+      "nombre": "VIZCAINO DITA OMAR DAVID",
+      "status": "inactivo"
     },
     {
       "contrato": "11935381825",
-      "nombre": "VIZCAINO DITA OMAR DAVID"
+      "nombre": "VIZCAINO DITA OMAR DAVID",
+      "status": "activo"
     },
     {
       "contrato": "75972185",
-      "nombre": "VIZCAINO PALLARES JOSE LUIS"
+      "nombre": "VIZCAINO PALLARES JOSE LUIS",
+      "status": "activo"
     },
     {
       "contrato": "19590629",
-      "nombre": "VIZCAINO SALGADO LUIS ALBERTO"
+      "nombre": "VIZCAINO SALGADO LUIS ALBERTO",
+      "status": "activo"
     },
     {
       "contrato": "364545961",
-      "nombre": "VIZCAINO SALGADO LUZ ELENA"
+      "nombre": "VIZCAINO SALGADO LUZ ELENA",
+      "status": "activo"
     },
     {
       "contrato": "1193208823",
-      "nombre": "VIZCAINO TORRES IVAN DAVID"
+      "nombre": "VIZCAINO TORRES IVAN DAVID",
+      "status": "activo"
     },
     {
       "contrato": "10651230943",
-      "nombre": "YEPES DE LEON MARIO ALBERTO"
+      "nombre": "YEPES DE LEON MARIO ALBERTO",
+      "status": "activo"
+    },
+    {
+      "contrato": "1128105136",
+      "nombre": "OROZCO NAVARRLO ALEJANDRO FIDEL",
+      "status": "activo"
     }
   ]
 }
