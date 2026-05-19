@@ -26,7 +26,7 @@ app.use('/api/auditoria', auditoriaRoutes);
 
 app.get('/api/test', (req, res) => res.json({ status: 'OK' }));
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
