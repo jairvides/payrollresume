@@ -464,7 +464,7 @@
     {
       "contrato": "1128104248",
       "nombre": "JIMENEZ CASTELLAR VALERIA KARINA",
-      "status": "activo"
+      "status": "inactivo"
     },
     {
       "contrato": "11342042023",
@@ -899,7 +899,7 @@
     {
       "contrato": "11932188302",
       "nombre": "PERTUZ SIERRA LEONEL ENRIQUE",
-      "status": "activo"
+      "status": "inactivo"
     },
     {
       "contrato": "11932188303",
@@ -1029,12 +1029,12 @@
     {
       "contrato": "771667523",
       "nombre": "RODRIGUEZ CERVANTES SAUL ALBERTO",
-      "status": "activo"
+      "status": "inactivo"
     },
     {
       "contrato": "771667524",
       "nombre": "RODRIGUEZ CERVANTES SAUL ALBERTO",
-      "status": "activo"
+      "status": "inactivo"
     },
     {
       "contrato": "1128105230",
@@ -1169,6 +1169,21 @@
     {
       "contrato": "1128105136",
       "nombre": "OROZCO NAVARRLO ALEJANDRO FIDEL",
+      "status": "activo"
+    },
+    {
+      "contrato": "11931547232",
+      "nombre": "OYOLA MADRID CARLOS ANDRES",
+      "status": "activo"
+    },
+    {
+      "contrato": "11281072303",
+      "nombre": "JIMENEZ ESCORCIA EDUAR FRANCISCO",
+      "status": "activo"
+    },
+    {
+      "contrato": "10031969051",
+      "nombre": "CHARRIS MARTINEZ JEAN CARLOS",
       "status": "activo"
     }
   ]

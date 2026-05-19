@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Upload, Loader2, Activity, FileDown, FileText, TableProperties } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -6,14 +6,24 @@ import 'jspdf-autotable';
 
 export default function AuditManager() {
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
+  const [result, setResult] = useState(() => {
+    const saved = localStorage.getItem('audit_results');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('conflictos');
   const [dates, setDates] = useState({ fechaInicio: '', fechaFin: '', anio: new Date().getFullYear().toString() });
 
+  useEffect(() => {
+    if (result) {
+      localStorage.setItem('audit_results', JSON.stringify(result));
+    }
+  }, [result]);
+
   const handleUpload = async (e) => {
     e.preventDefault();
     setLoading(true); setError(''); setResult(null);
+    localStorage.removeItem('audit_results');
     const formData = new FormData();
     formData.append('vigilancia', e.target.vigilancia.files[0]);
     formData.append('nomina', e.target.nomina.files[0]);

@@ -7,6 +7,7 @@ const xlsx = require('xlsx');
 const { parsearVigilancia, parsearNomina } = require('../services/excelParser');
 const { obtenerDiasLaborales } = require('../utils/dateUtils');
 const { calcularMatrizLaboral, generarCSVMatriz } = require('../services/matrixService');
+const Empleado = require('../models/Empleado');
 
 // Función para normalizar detalles (Ej: "RIEGO POR MELGAS 130 PALMAS" -> "RIEGO POR MELGAS")
 const normalizarDetalle = (detalle) => {
@@ -18,26 +19,15 @@ const normalizarDetalle = (detalle) => {
 };
 
 const upload = multer({ dest: 'uploads/' });
-const DB_PATH = path.join(__dirname, '../models/empleados.json');
 
-// Auxiliar para leer maestro
-const getMaestro = () => {
-  if (!fs.existsSync(DB_PATH)) return [];
-  try {
-    return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')).empleados || [];
-  } catch (e) {
-    return [];
-  }
-};
-
-router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina' }]), (req, res) => {
+router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina' }]), async (req, res) => {
   try {
     const { fechaInicio, fechaFin, anio } = req.body;
     if (!req.files?.vigilancia || !req.files?.nomina) {
       return res.status(400).json({ error: 'Se requieren ambos archivos Excel' });
     }
 
-    const maestro = getMaestro().filter(e => e.status === 'activo');
+    const maestro = await Empleado.find({ status: 'activo' });
     const vigRes = parsearVigilancia(req.files.vigilancia[0].path);
     const nomRes = parsearNomina(req.files.nomina[0].path);
     
@@ -238,4 +228,5 @@ router.post('/exportar', (req, res) => {
 });
 
 module.exports = router;
+
 

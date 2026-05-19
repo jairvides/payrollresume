@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Upload, Loader2, Search, UserPlus, X } from 'lucide-react';
+import { Upload, Loader2, Search, UserPlus, X, FileDown } from 'lucide-react';
 
 export default function EmployeeManager() {
   const [loading, setLoading] = useState(false);
@@ -60,6 +60,19 @@ export default function EmployeeManager() {
     finally { setAdding(false); }
   };
 
+  const handleExportEmployees = async () => {
+    try {
+      const response = await axios.get('/api/empleados/exportar', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `maestro_empleados_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch { setError('Error al exportar la lista de empleados'); }
+  };
+
   const filteredEmployees = employees.filter(emp => 
     emp.nombre.toLowerCase().includes(search.toLowerCase()) || emp.contrato.includes(search)
   );
@@ -93,6 +106,12 @@ export default function EmployeeManager() {
             className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors"
           >
             <UserPlus className="w-4 h-4" /> Agregar Empleado
+          </button>
+          <button 
+            onClick={handleExportEmployees}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-colors"
+          >
+            <FileDown className="w-4 h-4" /> Exportar Maestro
           </button>
           <form onSubmit={handleUpload} className="flex gap-2 items-center">
             <input type="file" name="csvFile" accept=".csv" className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />

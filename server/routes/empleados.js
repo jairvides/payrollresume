@@ -5,31 +5,48 @@ const fs = require('fs');
 const path = require('path');
 const { parsearMaestroEmpleados } = require('../services/csvParser');
 const { normalizeContract } = require('../utils/stringUtils');
+const Empleado = require('../models/Empleado');
 
 const upload = multer({ dest: 'uploads/' });
 const DB_PATH = path.join(__dirname, '../models/empleados.json');
 
-// Auxiliar para leer/escribir DB JSON
-const getDB = () => {
-  if (!fs.existsSync(DB_PATH)) return { empleados: [] };
-  return JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+// Auxiliar para migrar datos de JSON a MongoDB si la colección está vacía
+const migrateIfNeeded = async () => {
+  try {
+    const count = await Empleado.countDocuments();
+    if (count === 0 && fs.existsSync(DB_PATH)) {
+      console.log('Migrando datos de JSON a MongoDB...');
+      const data = JSON.parse(fs.readFileSync(DB_PATH, 'utf8'));
+      if (data.empleados && data.empleados.length > 0) {
+        await Empleado.insertMany(data.empleados);
+        console.log(`Migración completada: ${data.empleados.length} empleados importados.`);
+      }
+    }
+  } catch (e) {
+    console.error('Error durante la migración:', e);
+  }
 };
 
-const saveDB = (data) => {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-};
+// Ejecutar migración al cargar las rutas
+migrateIfNeeded();
 
 // POST /api/empleados/cargar
-router.post('/cargar', upload.single('file'), (req, res) => {
+router.post('/cargar', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No se subió ningún archivo' });
     
     const { empleados, warnings } = parsearMaestroEmpleados(req.file.path);
-    saveDB({ actualizado: new Date(), empleados });
+    
+    // Usamos bulkWrite para eficiencia
+    const operations = empleados.map(emp => ({
+      updateOne: {
+        filter: { contrato: emp.contrato },
+        update: { $set: emp },
+        upsert: true
+      }
+    }));
+
+    await Empleado.bulkWrite(operations);
     
     fs.unlinkSync(req.file.path);
     res.json({ 
@@ -43,13 +60,17 @@ router.post('/cargar', upload.single('file'), (req, res) => {
 });
 
 // GET /api/empleados
-router.get('/', (req, res) => {
-  const db = getDB();
-  res.json(db.empleados);
+router.get('/', async (req, res) => {
+  try {
+    const empleados = await Empleado.find({});
+    res.json(empleados);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener empleados' });
+  }
 });
 
 // POST /api/empleados (Agregar un solo empleado)
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { nombre, contrato } = req.body;
     if (!nombre || !contrato) {
@@ -61,20 +82,18 @@ router.post('/', (req, res) => {
       return res.status(400).json({ error: 'El contrato no tiene un formato válido' });
     }
 
-    const db = getDB();
-    if (db.empleados.some(e => e.contrato === normalizedContrato)) {
+    const exists = await Empleado.findOne({ contrato: normalizedContrato });
+    if (exists) {
       return res.status(400).json({ error: 'El contrato ya existe en el sistema' });
     }
 
-    const nuevoEmpleado = { 
+    const nuevoEmpleado = new Empleado({ 
       contrato: normalizedContrato, 
       nombre: nombre.trim(), 
       status: 'activo' 
-    };
+    });
 
-    db.empleados.push(nuevoEmpleado);
-    saveDB(db);
-
+    await nuevoEmpleado.save();
     res.status(201).json({ message: 'Empleado agregado con éxito', empleado: nuevoEmpleado });
   } catch (error) {
     res.status(500).json({ error: 'Error al agregar el empleado' });
@@ -82,27 +101,38 @@ router.post('/', (req, res) => {
 });
 
 // PUT /api/empleados/:contrato (Actualizar estado o nombre)
-router.put('/:contrato', (req, res) => {
+router.put('/:contrato', async (req, res) => {
   const { contrato } = req.params;
   const { status, nombre } = req.body;
-  const db = getDB();
-  const emp = db.empleados.find(e => e.contrato === contrato);
-  if (!emp) return res.status(404).json({ error: 'Empleado no encontrado' });
-
-  if (status) emp.status = status;
-  if (nombre) emp.nombre = nombre;
   
-  saveDB(db);
-  res.json({ message: 'Empleado actualizado', empleado: emp });
+  try {
+    const updateData = {};
+    if (status) updateData.status = status;
+    if (nombre) updateData.nombre = nombre;
+
+    const emp = await Empleado.findOneAndUpdate(
+      { contrato },
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!emp) return res.status(404).json({ error: 'Empleado no encontrado' });
+    res.json({ message: 'Empleado actualizado', empleado: emp });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al actualizar el empleado' });
+  }
 });
 
 // DELETE /api/empleados/:contrato
-router.delete('/:contrato', (req, res) => {
+router.delete('/:contrato', async (req, res) => {
   const { contrato } = req.params;
-  let db = getDB();
-  db.empleados = db.empleados.filter(e => e.contrato !== contrato);
-  saveDB(db);
-  res.json({ message: 'Empleado eliminado' });
+  try {
+    const result = await Empleado.deleteOne({ contrato });
+    if (result.deletedCount === 0) return res.status(404).json({ error: 'Empleado no encontrado' });
+    res.json({ message: 'Empleado eliminado' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error al eliminar el empleado' });
+  }
 });
 
 module.exports = router;
