@@ -115,16 +115,26 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
     for (const contrato in acts) {
       const actividades = acts[contrato];
       actividades.forEach(act => {
-        const detNorm = normalizarDetalle(act.detalle);
+        const concepto = act.concepto || 'Sin Concepto';
+        const detalle = act.detalle || 'Sin Detalle';
         const ref = act.referencia || 'S/R';
-        if (!resumenDetallesMap[detNorm]) resumenDetallesMap[detNorm] = new Set();
-        resumenDetallesMap[detNorm].add(ref);
+        const key = `${concepto}:::${detalle}`;
+        
+        if (!resumenDetallesMap[key]) {
+          resumenDetallesMap[key] = {
+            concepto: concepto,
+            detalle: detalle,
+            refs: new Set()
+          };
+        }
+        resumenDetallesMap[key].refs.add(ref);
       });
     }
 
-    const resumenDetalles = Object.entries(resumenDetallesMap).map(([detalle, refs]) => ({
-      detalle,
-      referencias: Array.from(refs).sort().join(', ')
+    const resumenDetalles = Object.values(resumenDetallesMap).map(item => ({
+      concepto: item.concepto,
+      detalle: item.detalle,
+      referencias: Array.from(item.refs).sort().join(', ')
     }));
 
     // 7. MATRIZ LABORAL

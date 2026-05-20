@@ -223,7 +223,8 @@ export default function AuditManager() {
                 { key: 'actividades', label: 'Actividades', render: row => row.actividades.join(', ') },
               ])}
               {activeTab === 'resumenDetalle' && renderTable(result.resumenDetalles, [
-                { key: 'detalle', label: 'Detalle Actividad' },
+                { key: 'concepto', label: 'Nombre Concepto' },
+                { key: 'detalle', label: 'Detalle' },
                 { key: 'referencias', label: 'Referencias' },
               ])}
               {activeTab === 'matriz' && (
