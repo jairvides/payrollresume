@@ -117,6 +117,9 @@ const parsearNomina = (path) => {
     const refKey = keys.find(k => k.norm.includes('REFERENCIA'))?.original;
     const referencia = refKey ? String(fila[refKey] || '').trim() : '';
     
+    const centroCostoKey = keys.find(k => k.norm.includes('CENTRO') && k.norm.includes('COSTO'))?.original;
+    const centroCosto = centroCostoKey ? String(fila[centroCostoKey] || '').trim() : 'S/C';
+    
     const conceptoFinal = (codigo && descripcion) 
       ? `${codigo} ${descripcion}` 
       : (codigo || descripcion || 'Sin Detalle');
@@ -128,7 +131,8 @@ const parsearNomina = (path) => {
         fecha: formatearFechaISO(fecha),
         concepto: conceptoFinal,
         detalle: descripcion,
-        referencia: referencia
+        referencia: referencia,
+        centroCosto: centroCosto
       });
     }
   });

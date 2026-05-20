@@ -123,6 +123,56 @@ export default function AuditManager() {
     } catch { setError('Error al generar el PDF'); }
   };
 
+  const renderPivotTable = (data) => {
+    if (!data || data.length === 0) {
+      return (
+        <div className="px-6 py-10 text-center text-gray-500">
+          No se encontraron registros
+        </div>
+      );
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-gray-100 border-b">
+            <tr>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase border-r">Nombre Concepto</th>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase border-r">Centro Costo</th>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase border-r">Detalle</th>
+              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Referencia</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y">
+            {data.map((row, idx) => {
+              const showConcepto = idx === 0 || row.concepto !== data[idx - 1]?.concepto;
+              const showCentroCosto = idx === 0 || 
+                                     row.concepto !== data[idx - 1]?.concepto || 
+                                     row.centroCosto !== data[idx - 1]?.centroCosto;
+
+              return (
+                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                  <td className={`px-4 py-2 text-sm border-r ${showConcepto ? 'font-bold bg-white' : 'text-transparent'}`}>
+                    {showConcepto ? row.concepto : ''}
+                  </td>
+                  <td className={`px-4 py-2 text-sm border-r ${showCentroCosto ? 'bg-white' : 'text-transparent'}`}>
+                    {showCentroCosto ? row.centroCosto : ''}
+                  </td>
+                  <td className="px-4 py-2 text-sm border-r">
+                    {row.detalle}
+                  </td>
+                  <td className="px-4 py-2 text-sm">
+                    {row.referencias}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   const renderTable = (data, columns) => (
     <div className="overflow-x-auto">
       <table className="w-full text-left border-collapse">
@@ -222,11 +272,7 @@ export default function AuditManager() {
                 { key: 'fecha', label: 'Fecha' },
                 { key: 'actividades', label: 'Actividades', render: row => row.actividades.join(', ') },
               ])}
-              {activeTab === 'resumenDetalle' && renderTable(result.resumenDetalles, [
-                { key: 'concepto', label: 'Nombre Concepto' },
-                { key: 'detalle', label: 'Detalle' },
-                { key: 'referencias', label: 'Referencias' },
-              ])}
+              {activeTab === 'resumenDetalle' && renderPivotTable(result.resumenDetalles)}
               {activeTab === 'matriz' && (
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-4">

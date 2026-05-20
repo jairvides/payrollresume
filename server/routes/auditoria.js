@@ -116,13 +116,15 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       const actividades = acts[contrato];
       actividades.forEach(act => {
         const concepto = act.concepto || 'Sin Concepto';
+        const centroCosto = act.centroCosto || 'S/C';
         const detalle = act.detalle || 'Sin Detalle';
         const ref = act.referencia || 'S/R';
-        const key = `${concepto}:::${detalle}`;
+        const key = `${concepto}:::${centroCosto}:::${detalle}`;
         
         if (!resumenDetallesMap[key]) {
           resumenDetallesMap[key] = {
             concepto: concepto,
+            centroCosto: centroCosto,
             detalle: detalle,
             refs: new Set()
           };
@@ -133,8 +135,14 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
 
     const resumenDetalles = Object.values(resumenDetallesMap).map(item => ({
       concepto: item.concepto,
+      centroCosto: item.centroCosto,
       detalle: item.detalle,
-      referencias: Array.from(item.refs).sort().join(', ')
+      referencias: Array.from(item.refs).sort((a, b) => {
+        const aNum = parseInt(a);
+        const bNum = parseInt(b);
+        if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+        return a.localeCompare(b);
+      }).join(', ')
     }));
 
     // 7. MATRIZ LABORAL
