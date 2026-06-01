@@ -138,7 +138,6 @@ export default function AuditManager() {
           <thead className="bg-gray-100 border-b">
             <tr>
               <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase border-r">Nombre Concepto</th>
-              <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase border-r">Centro Costo</th>
               <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase border-r">Detalle</th>
               <th className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase">Referencia</th>
             </tr>
@@ -146,17 +145,11 @@ export default function AuditManager() {
           <tbody className="divide-y">
             {data.map((row, idx) => {
               const showConcepto = idx === 0 || row.concepto !== data[idx - 1]?.concepto;
-              const showCentroCosto = idx === 0 || 
-                                     row.concepto !== data[idx - 1]?.concepto || 
-                                     row.centroCosto !== data[idx - 1]?.centroCosto;
 
               return (
                 <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                  <td className={`px-4 py-2 text-sm border-r ${showConcepto ? 'font-bold bg-white' : 'text-transparent'}`}>
-                    {showConcepto ? row.concepto : ''}
-                  </td>
-                  <td className={`px-4 py-2 text-sm border-r ${showCentroCosto ? 'bg-white' : 'text-transparent'}`}>
-                    {showCentroCosto ? row.centroCosto : ''}
+                  <td className={`px-4 py-2 text-sm border-r ${showConcepto ? 'font-bold bg-white' : 'text-gray-400'}`}>
+                    {showConcepto ? row.concepto : row.concepto}
                   </td>
                   <td className="px-4 py-2 text-sm border-r">
                     {row.detalle}

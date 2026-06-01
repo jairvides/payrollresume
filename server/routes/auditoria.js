@@ -9,15 +9,6 @@ const { obtenerDiasLaborales } = require('../utils/dateUtils');
 const { calcularMatrizLaboral, generarCSVMatriz } = require('../services/matrixService');
 const Empleado = require('../models/Empleado');
 
-// Función para normalizar detalles (Ej: "RIEGO POR MELGAS 130 PALMAS" -> "RIEGO POR MELGAS")
-const normalizarDetalle = (detalle) => {
-  if (!detalle) return 'Sin Detalle';
-  return detalle
-    .replace(/\s+\d+.*$/i, '') 
-    .trim()
-    .toUpperCase();
-};
-
 const upload = multer({ dest: 'uploads/' });
 
 router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina' }]), async (req, res) => {
@@ -116,15 +107,13 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       const actividades = acts[contrato];
       actividades.forEach(act => {
         const concepto = act.concepto || 'Sin Concepto';
-        const centroCosto = act.centroCosto || 'S/C';
         const detalle = act.detalle || 'Sin Detalle';
         const ref = act.referencia || 'S/R';
-        const key = `${concepto}:::${centroCosto}:::${detalle}`;
+        const key = `${concepto}:::${detalle}`;
         
         if (!resumenDetallesMap[key]) {
           resumenDetallesMap[key] = {
             concepto: concepto,
-            centroCosto: centroCosto,
             detalle: detalle,
             refs: new Set()
           };
@@ -132,10 +121,9 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
         resumenDetallesMap[key].refs.add(ref);
       });
     }
-
+    
     const resumenDetalles = Object.values(resumenDetallesMap).map(item => ({
       concepto: item.concepto,
-      centroCosto: item.centroCosto,
       detalle: item.detalle,
       referencias: Array.from(item.refs).sort((a, b) => {
         const aNum = parseInt(a);
