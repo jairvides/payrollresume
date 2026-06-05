@@ -12,6 +12,11 @@ const Empleado = require('../models/Empleado');
 const upload = multer({ dest: 'uploads/' });
 
 router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina' }]), async (req, res) => {
+  // Guardamos las rutas de los archivos para poder borrarlos al final
+  const archivosABorrar = [];
+  if (req.files?.vigilancia?.[0]) archivosABorrar.push(req.files.vigilancia[0].path);
+  if (req.files?.nomina?.[0]) archivosABorrar.push(req.files.nomina[0].path);
+
   try {
     const { fechaInicio, fechaFin, anio } = req.body;
     if (!req.files?.vigilancia || !req.files?.nomina) {
@@ -210,6 +215,17 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: error.message });
+  } finally {
+    // --- AQUÍ HACEMOS LA LIMPIEZA INMEDIATA ---
+    archivosABorrar.forEach(rutaArchivo => {
+      fs.unlink(rutaArchivo, (err) => {
+        if (err) {
+          console.error(`No se pudo eliminar el archivo temporal: ${rutaArchivo}`, err);
+        } else {
+          console.log(`🗑️ Archivo temporal eliminado con éxito: ${rutaArchivo}`);
+        }
+      });
+    });
   }
 });
 
