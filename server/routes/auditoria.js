@@ -21,20 +21,19 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
     const maestro = await Empleado.find({ status: 'activo' });
     const vigRes = parsearVigilancia(req.files.vigilancia[0].path);
     const nomRes = parsearNomina(req.files.nomina[0].path);
-    
+
     const novs = vigRes.data;
     const novNames = vigRes.names;
     const acts = nomRes.data;
     const actNames = nomRes.names;
 
-    // 1. DETECCIÓN DE CONFLICTOS
     const conflictos = [];
     for (const contrato in novs) {
       const actividades = acts[contrato] || [];
       const contratoLimpio = contrato.trim();
       const empleado = maestro.find(emp => String(emp.contrato || '').trim() === contratoLimpio);
       const nombre = empleado ? empleado.nombre : (actNames[contrato] || novNames[contrato] || 'Desconocido');
-      
+
       novs[contrato].forEach(n => {
         if (fechaInicio && fechaFin && (n.fecha < fechaInicio || n.fecha > fechaFin)) {
           return;
@@ -46,11 +45,9 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       });
     }
 
-    // 2. DETECCIÓN DE EMPLEADOS FALTANTES
     const contratosEnArchivos = new Set([...Object.keys(novs), ...Object.keys(acts)]);
     const faltantes = maestro.filter(emp => !contratosEnArchivos.has(emp.contrato));
 
-    // 3. DETECCIÓN DE EMPLEADOS NO REGISTRADOS
     const contratosMaestro = new Set(maestro.map(emp => emp.contrato));
     const noRegistrados = [];
     for (const contrato of contratosEnArchivos) {
@@ -60,22 +57,33 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       }
     }
 
-    // 4. DETECCIÓN DE INACTIVIDAD
     let inactivos = [];
     if (fechaInicio && fechaFin && anio) {
       const diasLaborales = obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio));
+      
       maestro.forEach(emp => {
         const empNovs = novs[emp.contrato] || [];
         const empActs = acts[emp.contrato] || [];
+        
+        // --- AQUÍ APLICAMOS EL FILTRO ---
+        // Verificamos si tiene el código DV01 en alguna de sus actividades
+        const esAdministrativo = empActs.some(act => 
+          String(act.digitoVerificacion || '').trim().toUpperCase() === 'DV01'
+        );
+
+        // Si es administrativo (DV01), lo saltamos
+        if (esAdministrativo) return; 
+
+        // Si no es administrativo, procedemos con la lógica de inactivos
         const fechasConRegistro = new Set([...empNovs.map(n => n.fecha), ...empActs.map(a => a.fecha)]);
         const diasSinRegistro = diasLaborales.filter(dia => !fechasConRegistro.has(dia));
+        
         if (diasSinRegistro.length > 0) {
           inactivos.push({ contrato: emp.contrato, nombre: emp.nombre, dias_faltantes: diasSinRegistro });
         }
       });
     }
 
-    // 5. DETECCIÓN DE MÚLTIPLES ACTIVIDADES (> 2 el mismo día)
     const multiples = [];
     for (const contrato in acts) {
       const actividades = acts[contrato];
@@ -90,7 +98,7 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       });
 
       for (const fecha in conteoPorFecha) {
-        if (conteoPorFecha[fecha].length > 2) {
+        if (conteoPorFecha[fecha].length >= 2) {
           multiples.push({
             contrato,
             nombre,
@@ -100,65 +108,86 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
         }
       }
     }
+    // EL SORT DEBE IR AQUÍ, FUERA DEL BUCLE
+    multiples.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-    // 6. RESUMEN DE DETALLES Y REFERENCIAS
-    const resumenDetallesMap = {}; 
+    const resumenDetallesMap = {};
+    
+    // 1. Recorremos todas las actividades
     for (const contrato in acts) {
-      const actividades = acts[contrato];
-      actividades.forEach(act => {
+      acts[contrato].forEach(act => {
         const concepto = act.concepto || 'Sin Concepto';
         const detalle = act.detalle || 'Sin Detalle';
-        const ref = act.referencia || 'S/R';
-        const key = `${concepto}:::${detalle}`;
+        const ref = String(act.referencia || 'S/R').trim().toUpperCase();
         
+        // Creamos una clave única basada en concepto y detalle
+        const key = `${concepto}:::${detalle}`;
+
         if (!resumenDetallesMap[key]) {
-          resumenDetallesMap[key] = {
-            concepto: concepto,
-            detalle: detalle,
-            refs: new Set()
-          };
+          resumenDetallesMap[key] = { concepto, detalle, refs: new Set() };
         }
         resumenDetallesMap[key].refs.add(ref);
       });
     }
-    
-    const resumenDetalles = Object.values(resumenDetallesMap).map(item => ({
-      concepto: item.concepto,
-      detalle: item.detalle,
-      referencias: Array.from(item.refs).sort((a, b) => {
-        const aNum = parseInt(a);
-        const bNum = parseInt(b);
-        if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
-        return a.localeCompare(b);
-      }).join(', ')
-    }));
 
-    // 7. MATRIZ LABORAL
-    const diasLaborales = (fechaInicio && fechaFin && anio) 
-      ? obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio)) 
+    // 2. Ahora, el paso clave: fusionar los que comparten misma referencia
+    // Transformamos el mapa a un array plano
+    let listaIntermedia = Object.values(resumenDetallesMap);
+    
+    // Agrupamos por concepto y referencia para concatenar detalles
+    const finalMap = {};
+    
+    listaIntermedia.forEach(item => {
+      // Intentamos identificar grupos por concepto + referencia (si solo hay una ref)
+      const refKey = Array.from(item.refs).length === 1 ? Array.from(item.refs)[0] : null;
+      const groupKey = refKey ? `${item.concepto}:::${refKey}` : `${item.concepto}:::${item.detalle}`;
+
+      if (!finalMap[groupKey]) {
+        finalMap[groupKey] = { 
+          concepto: item.concepto, 
+          detalles: new Set(), 
+          refs: new Set() 
+        };
+      }
+      finalMap[groupKey].detalles.add(item.detalle);
+      item.refs.forEach(r => finalMap[groupKey].refs.add(r));
+    });
+
+    // 3. Resultado final para el frontend
+    const resumenDetalles = Object.values(finalMap)
+      .sort((a, b) => a.concepto.localeCompare(b.concepto))
+      .map(item => ({
+        concepto: item.concepto,
+        detalle: Array.from(item.detalles).sort().join(' - '),
+        referencias: Array.from(item.refs).sort().join(', ')
+      }));
+
+    const diasLaborales = (fechaInicio && fechaFin && anio)
+      ? obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio))
       : [];
 
     const todosEmpleados = [];
     maestro.forEach(emp => todosEmpleados.push({ contrato: emp.contrato, nombre: emp.nombre }));
-    
+
     for (const contrato in acts) {
       if (!contratosMaestro.has(contrato)) {
-        todosEmpleados.push({ 
-          contrato, 
-          nombre: actNames[contrato] || novNames[contrato] || 'Desconocido' 
-        });
+        todosEmpleados.push({ contrato, nombre: actNames[contrato] || novNames[contrato] || 'Desconocido' });
       }
     }
     for (const contrato in novs) {
       if (!contratosMaestro.has(contrato) && !acts[contrato]) {
-        todosEmpleados.push({ 
-          contrato, 
-          nombre: novNames[contrato] || 'Desconocido' 
-        });
+        todosEmpleados.push({ contrato, nombre: novNames[contrato] || 'Desconocido' });
       }
     }
 
-    const matriz = calcularMatrizLaboral(todosEmpleados, diasLaborales, acts, novs);
+    const matriz = calcularMatrizLaboral(todosEmpleados, diasLaborales, acts, novs, parseInt(anio), fechaInicio, fechaFin);
+
+    const fechasConDatosSet = new Set(diasLaborales);
+    matriz.forEach(emp => {
+      Object.keys(emp.conteo).forEach(fecha => fechasConDatosSet.add(fecha));
+    });
+    
+    const diasLaboralesExtendidos = Array.from(fechasConDatosSet).sort((a, b) => new Date(a) - new Date(b));
 
     res.json({
       resumen: {
@@ -175,7 +204,7 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       multiples,
       resumenDetalles,
       matriz,
-      diasLaborales
+      diasLaborales: diasLaboralesExtendidos 
     });
 
   } catch (error) {
@@ -192,7 +221,7 @@ router.post('/exportar-matriz', (req, res) => {
     }
 
     const csvContent = generarCSVMatriz(result.matriz, result.diasLaborales);
-    
+
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', 'attachment; filename="matriz_laboral.csv"');
     res.status(200).send(csvContent);
@@ -208,15 +237,19 @@ router.post('/exportar', (req, res) => {
     if (!result) return res.status(400).json({ error: 'No se proporcionaron datos para exportar' });
 
     const wb = xlsx.utils.book_new();
-
     const sheets = [
       { name: 'Conflictos', data: result.conflictos },
       { name: 'Faltantes', data: result.faltantes },
       { name: 'Inactivos', data: result.inactivos.map(i => ({ ...i, dias_faltantes: i.dias_faltantes.join(', ') })) },
       { name: 'No Registrados', data: result.noRegistrados },
-      { name: 'Multiples Actividades', data: result.multiples.map(m => ({ ...m, actividades: m.actividades.join(', ') })) },
+      // AQUÍ USAMOS \n PARA QUE EXCEL SALTE DE LÍNEA
+      { name: 'Multiples Actividades', data: result.multiples.map(m => ({ 
+          ...m, 
+          actividades: m.actividades.join('\n') 
+      })) },
       { name: 'Resumen Detalles', data: result.resumenDetalles },
     ];
+    // ... resto de la lógica de exportación igual
 
     sheets.forEach(sheet => {
       const ws = xlsx.utils.json_to_sheet(sheet.data);
@@ -234,5 +267,3 @@ router.post('/exportar', (req, res) => {
 });
 
 module.exports = router;
-
-

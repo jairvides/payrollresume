@@ -8,7 +8,7 @@ import App from './App.jsx'
 const API_URL = import.meta.env.VITE_API_URL || 
                (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
                 ? 'http://localhost:8080' 
-                : 'https://serene-endurance-production-2b93.up.railway.app');
+                : '');
 
 axios.defaults.baseURL = API_URL;
 

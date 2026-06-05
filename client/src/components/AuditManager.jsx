@@ -82,11 +82,11 @@ export default function AuditManager() {
       let currentY = 40;
       sections.forEach(section => {
         if (section.data.length === 0) return;
-        
+
         doc.setFontSize(14);
         doc.text(section.title, 14, currentY);
-        
-        const tableData = section.data.map(row => 
+
+        const tableData = section.data.map(row =>
           section.cols.map(col => {
             const key = col.toLowerCase().replace(' ', '_').replace('múltiples', 'multiples');
             const mapping = {
@@ -111,7 +111,7 @@ export default function AuditManager() {
           theme: 'grid',
           headStyles: { fillColor: [41, 128, 185] }
         });
-        
+
         currentY = doc.lastAutoTable.finalY + 15;
         if (currentY > 270) {
           doc.addPage();
@@ -196,12 +196,12 @@ export default function AuditManager() {
       <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2"><Activity size={20} className="text-blue-600" /> Configuración de Auditoría</h2>
         <form onSubmit={handleUpload} className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label><input type="date" required className="block w-full p-2 border rounded-lg" value={dates.fechaInicio} onChange={e => setDates({...dates, fechaInicio: e.target.value})}/></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Fecha Fin</label><input type="date" required className="block w-full p-2 border rounded-lg" value={dates.fechaFin} onChange={e => setDates({...dates, fechaFin: e.target.value})}/></div>
-          <div><label className="block text-sm font-medium text-gray-700 mb-1">Año</label><input type="number" required className="block w-full p-2 border rounded-lg" value={dates.anio} onChange={e => setDates({...dates, anio: e.target.value})}/></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">Fecha Inicio</label><input type="date" required className="block w-full p-2 border rounded-lg" value={dates.fechaInicio} onChange={e => setDates({ ...dates, fechaInicio: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">Fecha Fin</label><input type="date" required className="block w-full p-2 border rounded-lg" value={dates.fechaFin} onChange={e => setDates({ ...dates, fechaFin: e.target.value })} /></div>
+          <div><label className="block text-sm font-medium text-gray-700 mb-1">Año</label><input type="number" required className="block w-full p-2 border rounded-lg" value={dates.anio} onChange={e => setDates({ ...dates, anio: e.target.value })} /></div>
           <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 border-t pt-4 mt-2">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Archivo Vigilancia (.xlsx)</label><input type="file" name="vigilancia" accept=".xlsx" required className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Archivo Nómina (.xlsx)</label><input type="file" name="nomina" accept=".xlsx" required className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"/></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Archivo Vigilancia (.xlsx)</label><input type="file" name="vigilancia" accept=".xlsx" required className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" /></div>
+            <div><label className="block text-sm font-medium text-gray-700 mb-1">Archivo Nómina (.xlsx)</label><input type="file" name="nomina" accept=".xlsx" required className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" /></div>
           </div>
           <div className="md:col-span-3"><button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition disabled:opacity-50">{loading ? <><Loader2 className="animate-spin" size={20} /> Analizando...</> : <><Upload size={20} /> Ejecutar Auditoría</>}</button></div>
         </form>
@@ -236,14 +236,37 @@ export default function AuditManager() {
                 </button>
               ))}
             </div>
-            
+
             <div className="p-0">
               {activeTab === 'conflictos' && renderTable(result.conflictos, [
                 { key: 'contrato', label: 'Contrato' },
                 { key: 'nombre', label: 'Nombre' },
                 { key: 'fecha', label: 'Fecha' },
-                { key: 'novedad', label: 'Novedad' },
-                { key: 'actividad', label: 'Actividad' },
+                { 
+                  key: 'novedad', 
+                  label: 'Novedad',
+                  render: row => (
+                    <div className="flex flex-col gap-1">
+                      {row.novedad.split(', ').map((n, idx) => (
+                        <div key={idx} style={{ fontWeight: 'bold' }} className="text-red-500">
+                          {n}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                },
+                { 
+                  key: 'actividad', 
+                  label: 'Actividad',
+                render: row => (
+                    <div className="flex flex-col gap-1">
+                      {row.actividad.split(', ').map((n, idx) => (
+                        <div key={idx} style={{ fontWeight: 'bold' }} className="text-gray-900">
+                          {n}
+                        </div>
+                      ))}
+                    </div>
+                  ) },
               ])}
               {activeTab === 'faltantes' && renderTable(result.faltantes, [
                 { key: 'contrato', label: 'Contrato' },
@@ -253,7 +276,19 @@ export default function AuditManager() {
               {activeTab === 'inactivos' && renderTable(result.inactivos, [
                 { key: 'contrato', label: 'Contrato' },
                 { key: 'nombre', label: 'Nombre' },
-                { key: 'dias_faltantes', label: 'Días Faltantes', render: row => row.dias_faltantes.join(', ') },
+                { 
+                  key: 'dias_faltantes', 
+                  label: 'Días Faltantes', 
+                  render: row => (
+                    <div className="flex flex-col gap-1">
+                      {row.dias_faltantes.map((act, idx) => (
+                        <div key={idx} style={{ fontWeight: 'bold' }} className="text-red-600">
+                          • {act}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                 },
               ])}
               {activeTab === 'noRegistrados' && renderTable(result.noRegistrados, [
                 { key: 'contrato', label: 'Contrato' },
@@ -263,7 +298,20 @@ export default function AuditManager() {
                 { key: 'contrato', label: 'Contrato' },
                 { key: 'nombre', label: 'Nombre' },
                 { key: 'fecha', label: 'Fecha' },
-                { key: 'actividades', label: 'Actividades', render: row => row.actividades.join(', ') },
+                // REEMPLAZA ESTA LÍNEA AQUÍ:
+                {
+                  key: 'actividades',
+                  label: 'Actividades',
+                  render: row => (
+                    <div className="flex flex-col gap-1">
+                      {row.actividades.map((act, idx) => (
+                        <div key={idx} style={{ fontWeight: 'bold' }} className="text-gray-900">
+                          • {act}
+                        </div>
+                      ))}
+                    </div>
+                  )
+                },
               ])}
               {activeTab === 'resumenDetalle' && renderPivotTable(result.resumenDetalles)}
               {activeTab === 'matriz' && (
@@ -282,7 +330,7 @@ export default function AuditManager() {
                           {result.diasLaborales.map(date => {
                             const [, m, d] = date.split('-');
                             const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-                            return <th key={date} className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase min-w-[80px]">{d} {months[parseInt(m)-1]}</th>;
+                            return <th key={date} className="px-4 py-3 text-xs font-semibold text-gray-600 uppercase min-w-[80px]">{d} {months[parseInt(m) - 1]}</th>;
                           })}
                         </tr>
                       </thead>

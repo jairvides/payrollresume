@@ -36,6 +36,25 @@ const esDiaLaboral = (fecha, anio) => {
   return !esFestivo(d, anio);
 };
 
+const obtenerDiasCalendario = (inicio, fin) => {
+  const dias = [];
+  const [anioI, mesI, diaI] = inicio.split('-').map(Number);
+  const [anioF, mesF, diaF] = fin.split('-').map(Number);
+
+  const actual = new Date(anioI, mesI - 1, diaI);
+  const finale = new Date(anioF, mesF - 1, diaF);
+
+  actual.setHours(0, 0, 0, 0);
+  finale.setHours(0, 0, 0, 0);
+
+  while (actual <= finale) {
+    dias.push(formatearFechaISO(actual));
+    actual.setDate(actual.getDate() + 1);
+  }
+
+  return dias;
+};
+
 const obtenerDiasLaborales = (inicio, fin, anio) => {
   const dias = [];
   
@@ -63,5 +82,6 @@ module.exports = {
   formatearFechaISO,
   esFestivo,
   esDiaLaboral,
+  obtenerDiasCalendario,
   obtenerDiasLaborales
 };

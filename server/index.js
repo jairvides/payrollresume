@@ -13,7 +13,20 @@ const app = express();
 // Conectar a la base de datos
 connectDB();
 
-app.use(cors());
+// Permitir CORS explícitamente (acepta cualquier origen en producción; ajustar si se requiere)
+app.use(cors({ origin: '*' }));
+app.options('*', cors());
+
+// Logger simple de peticiones entrantes (muestra método, ruta y origen)
+app.use((req, res, next) => {
+  try {
+    const origin = req.headers.origin || '-';
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} Origin:${origin}`);
+  } catch (e) {
+    // no bloquear en caso de error
+  }
+  next();
+});
 app.use(express.json({ limit: '50mb' }));
 
 // Asegurar carpeta uploads

@@ -5,12 +5,12 @@ services:
     command: sleep infinity
     ports:
       - "3000:3000"
-      - "3001:3001"
+      - "8080:8080"
     volumes:
-      - ..:/workspace:cached
+      - ./:/workspace:cached
     environment:
       - DATABASE_URL=postgres://postgres:password@db:5432/novedad_db
-      - PORT=3001
+      - PORT=8080
     depends_on:
       - db
   db:

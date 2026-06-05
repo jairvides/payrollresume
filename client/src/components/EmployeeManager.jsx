@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+
+// Configurar baseURL para producción si se define la variable Vite
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
 import { Upload, Loader2, Search, UserPlus, X, FileDown } from 'lucide-react';
 
 export default function EmployeeManager() {
@@ -19,7 +22,10 @@ export default function EmployeeManager() {
       try {
         const res = await axios.get('/api/empleados');
         setEmployees(res.data);
-      } catch (err) { console.error('Error fetching employees', err); }
+      } catch (err) {
+        console.error('Error fetching employees', err);
+        setError('No se pudo cargar la lista de empleados. Ver consola para más detalles.');
+      }
     };
     fetchEmployees();
   }, []);
