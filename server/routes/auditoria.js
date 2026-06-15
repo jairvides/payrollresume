@@ -8,6 +8,8 @@ const { parsearVigilancia, parsearNomina } = require('../services/excelParser');
 const { obtenerDiasLaborales } = require('../utils/dateUtils');
 const { calcularMatrizLaboral, generarCSVMatriz } = require('../services/matrixService');
 const Empleado = require('../models/Empleado');
+// Asegúrate de que esta línea esté así:
+const { optimizarYSanitizarNomina, reconstruirLayoutPlano } = require('../utils/dataSanitizer'); // Importar la función de sanitización de datos
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -29,8 +31,18 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
 
     const novs = vigRes.data;
     const novNames = vigRes.names;
-    const acts = nomRes.data;
+
+
+    // --- AQUÍ APLICAMOS LA MAGIA ---
+    // Sanitizamos los datos en memoria antes de que sigan su camino en el algoritmo
     const actNames = nomRes.names;
+
+    // LLLAMADA AL MÓDULO MODULAR DE SANITIZACIÓN
+    const acts = optimizarYSanitizarNomina(nomRes.data);
+
+    // Generamos la nómina corregida plana para que viaje directo al Frontend y esté lista para exportar
+    const nominaCorregida = reconstruirLayoutPlano(acts, actNames);
+
 
     const conflictos = [];
     for (const contrato in novs) {
@@ -65,24 +77,24 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
     let inactivos = [];
     if (fechaInicio && fechaFin && anio) {
       const diasLaborales = obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio));
-      
+
       maestro.forEach(emp => {
         const empNovs = novs[emp.contrato] || [];
         const empActs = acts[emp.contrato] || [];
-        
+
         // --- AQUÍ APLICAMOS EL FILTRO ---
         // Verificamos si tiene el código DV01 en alguna de sus actividades
-        const esAdministrativo = empActs.some(act => 
+        const esAdministrativo = empActs.some(act =>
           String(act.digitoVerificacion || '').trim().toUpperCase() === 'DV01'
         );
 
         // Si es administrativo (DV01), lo saltamos
-        if (esAdministrativo) return; 
+        if (esAdministrativo) return;
 
         // Si no es administrativo, procedemos con la lógica de inactivos
         const fechasConRegistro = new Set([...empNovs.map(n => n.fecha), ...empActs.map(a => a.fecha)]);
         const diasSinRegistro = diasLaborales.filter(dia => !fechasConRegistro.has(dia));
-        
+
         if (diasSinRegistro.length > 0) {
           inactivos.push({ contrato: emp.contrato, nombre: emp.nombre, dias_faltantes: diasSinRegistro });
         }
@@ -117,14 +129,14 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
     multiples.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
     const resumenDetallesMap = {};
-    
+
     // 1. Recorremos todas las actividades
     for (const contrato in acts) {
       acts[contrato].forEach(act => {
         const concepto = act.concepto || 'Sin Concepto';
-        const detalle = act.detalle || 'Sin Detalle';
+        const detalle = act.detalle || '';
         const ref = String(act.referencia || 'S/R').trim().toUpperCase();
-        
+
         // Creamos una clave única basada en concepto y detalle
         const key = `${concepto}:::${detalle}`;
 
@@ -138,20 +150,20 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
     // 2. Ahora, el paso clave: fusionar los que comparten misma referencia
     // Transformamos el mapa a un array plano
     let listaIntermedia = Object.values(resumenDetallesMap);
-    
+
     // Agrupamos por concepto y referencia para concatenar detalles
     const finalMap = {};
-    
+
     listaIntermedia.forEach(item => {
       // Intentamos identificar grupos por concepto + referencia (si solo hay una ref)
       const refKey = Array.from(item.refs).length === 1 ? Array.from(item.refs)[0] : null;
       const groupKey = refKey ? `${item.concepto}:::${refKey}` : `${item.concepto}:::${item.detalle}`;
 
       if (!finalMap[groupKey]) {
-        finalMap[groupKey] = { 
-          concepto: item.concepto, 
-          detalles: new Set(), 
-          refs: new Set() 
+        finalMap[groupKey] = {
+          concepto: item.concepto,
+          detalles: new Set(),
+          refs: new Set()
         };
       }
       finalMap[groupKey].detalles.add(item.detalle);
@@ -191,7 +203,7 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
     matriz.forEach(emp => {
       Object.keys(emp.conteo).forEach(fecha => fechasConDatosSet.add(fecha));
     });
-    
+
     const diasLaboralesExtendidos = Array.from(fechasConDatosSet).sort((a, b) => new Date(a) - new Date(b));
 
     res.json({
@@ -209,7 +221,8 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       multiples,
       resumenDetalles,
       matriz,
-      diasLaborales: diasLaboralesExtendidos 
+      nominaCorregida, // Agrega nominaCorregida al payload de salida
+      diasLaborales: diasLaboralesExtendidos
     });
 
   } catch (error) {
@@ -226,6 +239,34 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
         }
       });
     });
+  }
+});
+
+router.post('/exportar-nomina-corregida', (req, res) => {
+  try {
+    const { result } = req.body;
+
+    if (!result || !result.nominaCorregida) {
+      return res.status(400).json({ error: 'No se encontraron datos de nómina corregida para exportar' });
+    }
+
+    // El array plano ya viene procesado desde el análisis inicial
+    const filasAExportar = result.nominaCorregida;
+
+    const wb = xlsx.utils.book_new();
+
+    const ws = xlsx.utils.json_to_sheet(filasAExportar);
+    // Ya no necesitas { header: ... } porque el orden ya lo definiste al crear los objetos
+    xlsx.utils.book_append_sheet(wb, ws, 'Nómina Corregida 3JM');
+
+    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="nomina_corregida_limpia.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.status(200).send(buf);
+  } catch (error) {
+    console.error('Error al exportar nómina:', error);
+    res.status(500).json({ error: 'Error interno al generar el archivo Excel de nómina' });
   }
 });
 
@@ -259,10 +300,12 @@ router.post('/exportar', (req, res) => {
       { name: 'Inactivos', data: result.inactivos.map(i => ({ ...i, dias_faltantes: i.dias_faltantes.join(', ') })) },
       { name: 'No Registrados', data: result.noRegistrados },
       // AQUÍ USAMOS \n PARA QUE EXCEL SALTE DE LÍNEA
-      { name: 'Multiples Actividades', data: result.multiples.map(m => ({ 
-          ...m, 
-          actividades: m.actividades.join('\n') 
-      })) },
+      {
+        name: 'Multiples Actividades', data: result.multiples.map(m => ({
+          ...m,
+          actividades: m.actividades.join('\n')
+        }))
+      },
       { name: 'Resumen Detalles', data: result.resumenDetalles },
     ];
     // ... resto de la lógica de exportación igual

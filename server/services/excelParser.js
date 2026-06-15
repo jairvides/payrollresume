@@ -105,7 +105,10 @@ const parsearNomina = (path) => {
     concepto: headerMap.CONCEPTODV !== undefined ? headerMap.CONCEPTODV : headerMap.CONCEPTO,
     detalle: headerMap.DETALLEACTIVIDAD !== undefined ? headerMap.DETALLEACTIVIDAD : headerMap.DETALLE,
     ref: headerMap.REFERENCIA,
-    digitoVerificacion: headerMap.DIGITOVERIFICACION
+    digitoVerificacion: headerMap.DIGITOVERIFICACION,
+    centroCosto: headerMap.CENTROCOSTO || headerMap.CENTRODEC0STO || headerMap.CC,
+    // Agregamos esto aquí para el mapeo de cantidad
+    cantidad: headerMap.CANTIDAD || headerMap.CANT
   };
 
   const actividades = {};
@@ -115,12 +118,15 @@ const parsearNomina = (path) => {
     const row = matrix[i];
     if (!row || row.length === 0) continue;
 
+    // --- AQUÍ ES DONDE DEBE IR LA EXTRACCIÓN ---
+    const cantidadRaw = String((row[cols.cantidad] ?? row[headerMap.CANTIDAD] ?? row[headerMap.CANT]) || '').trim();
+
     const contratoRaw = row[cols.contrato] ?? row[headerMap.IDCONTRATO];
     const contrato = normalizeContract(String(contratoRaw || ''));
     const nombre = String((row[cols.nombre] ?? row[headerMap.NOMBRETRABAJADOR]) || '').trim();
     const fechaRaw = row[cols.fecha] ?? row[headerMap.FECHA];
     const fecha = fechaRaw ? parsearFechaExcel(fechaRaw) : null;
-    
+
     const nombreConcepto = String(
       [
         row[cols.concepto],
@@ -130,14 +136,15 @@ const parsearNomina = (path) => {
         row[headerMap.DIGITOVERIFICADOR]
       ].find(valor => String(valor || '').trim()) || ''
     ).trim() || 'Sin Concepto';
-    
+
     const descripcion = String((row[cols.detalle] ?? row[headerMap.DETALLEACTIVIDAD]) || '').trim() || 'Sin Detalle';
     const referencia = String((row[cols.ref] ?? row[headerMap.REFERENCIA]) || '').trim() || 'S/R';
-    
-    // Aquí capturamos la columna del dígito de verificación
-    const digitoVerificacion = cols.digitoVerificacion !== undefined 
-      ? String(row[cols.digitoVerificacion] || '').trim() 
+
+    const digitoVerificacion = cols.digitoVerificacion !== undefined
+      ? String(row[cols.digitoVerificacion] || '').trim()
       : '';
+
+    const centroCostoOriginal = String((row[cols.centroCosto] ?? row[headerMap.CENTROCOSTO] ?? row[headerMap.CENTRODEC0STO]) || '').trim();
 
     if (contrato && fecha) {
       if (!actividades[contrato]) actividades[contrato] = [];
@@ -147,9 +154,16 @@ const parsearNomina = (path) => {
         concepto: nombreConcepto,
         detalle: descripcion,
         referencia: referencia,
-        digitoVerificacion: digitoVerificacion // Y lo guardamos en la memoria
+        digitoVerificacion: digitoVerificacion,
+        centroCosto: centroCostoOriginal,
+        cantidad: cantidadRaw // Ahora sí, row existe aquí
       });
     }
+  }
+
+  // --- AQUÍ APLICAMOS EL SORT POR FECHA PARA CADA TRABAJADOR ---
+  for (const contrato in actividades) {
+    actividades[contrato].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
   }
 
   return { data: actividades, names };

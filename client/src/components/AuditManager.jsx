@@ -37,6 +37,25 @@ export default function AuditManager() {
     finally { setLoading(false); }
   };
 
+  const exportNominaCorregida = async () => {
+  try {
+    const response = await axios.post('/api/auditoria/exportar-nomina-corregida', { result }, { responseType: 'blob' });
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `nomina_corregida_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) {
+    // CORRECCIÓN: Usamos la variable err para registrar el fallo técnico en consola
+    console.error('Error detallado de la descarga:', err);
+    setError('Error al descargar la nómina corregida');
+  }
+};
+
   const exportToExcel = async () => {
     try {
       const response = await axios.post('/api/auditoria/exportar', { result }, { responseType: 'blob' });
@@ -225,6 +244,15 @@ export default function AuditManager() {
               <button onClick={exportToExcel} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow-sm whitespace-nowrap">
                 <FileDown size={20} /> Excel
               </button>
+              <button
+                onClick={exportNominaCorregida}
+                className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow-sm flex items-center gap-2"
+              >
+                <svg className="w-5 height-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Descargar Nómina Corregida
+              </button>
             </div>
           </div>
 
@@ -242,8 +270,8 @@ export default function AuditManager() {
                 { key: 'contrato', label: 'Contrato' },
                 { key: 'nombre', label: 'Nombre' },
                 { key: 'fecha', label: 'Fecha' },
-                { 
-                  key: 'novedad', 
+                {
+                  key: 'novedad',
                   label: 'Novedad',
                   render: row => (
                     <div className="flex flex-col gap-1">
@@ -255,10 +283,10 @@ export default function AuditManager() {
                     </div>
                   )
                 },
-                { 
-                  key: 'actividad', 
+                {
+                  key: 'actividad',
                   label: 'Actividad',
-                render: row => (
+                  render: row => (
                     <div className="flex flex-col gap-1">
                       {row.actividad.split(', ').map((n, idx) => (
                         <div key={idx} style={{ fontWeight: 'bold' }} className="text-gray-900">
@@ -266,7 +294,8 @@ export default function AuditManager() {
                         </div>
                       ))}
                     </div>
-                  ) },
+                  )
+                },
               ])}
               {activeTab === 'faltantes' && renderTable(result.faltantes, [
                 { key: 'contrato', label: 'Contrato' },
@@ -276,9 +305,9 @@ export default function AuditManager() {
               {activeTab === 'inactivos' && renderTable(result.inactivos, [
                 { key: 'contrato', label: 'Contrato' },
                 { key: 'nombre', label: 'Nombre' },
-                { 
-                  key: 'dias_faltantes', 
-                  label: 'Días Faltantes', 
+                {
+                  key: 'dias_faltantes',
+                  label: 'Días Faltantes',
                   render: row => (
                     <div className="flex flex-col gap-1">
                       {row.dias_faltantes.map((act, idx) => (
@@ -288,7 +317,7 @@ export default function AuditManager() {
                       ))}
                     </div>
                   )
-                 },
+                },
               ])}
               {activeTab === 'noRegistrados' && renderTable(result.noRegistrados, [
                 { key: 'contrato', label: 'Contrato' },
