@@ -70,13 +70,16 @@ server/
     Empleado.js
     empleados.json
   routes/
+    auditoria_c.js
     auditoria.js
     empleados.js
   services/
     csvParser.js
     excelParser.js
     matrixService.js
+    tractoristaService.js
   utils/
+    dataSanitizer.js
     dateUtils.js
     stringUtils.js
   .env.example
@@ -1844,6 +1847,115 @@ module.exports = mongoose.model('Empleado', EmpleadoSchema);
 }
 `````
 
+## File: server/routes/auditoria_c.js
+`````javascript
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const xlsx = require('xlsx');
+const { parsearVigilancia, parsearNomina } = require('../services/excelParser');
+const { obtenerDiasLaborales } = require('../utils/dateUtils');
+const { calcularMatrizLaboral, generarCSVMatriz } = require('../services/matrixService');
+const { procesarReporteTractoristas } = require('../services/tractoristaService');
+const Empleado = require('../models/Empleado');
+const { optimizarYSanitizarNomina, reconstruirLayoutPlano } = require('../utils/dataSanitizer');
+const upload = multer({ dest: 'uploads/' });
+
+router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina' }]), async (req, res) => {
+  const archivosABorrar = [];
+  if (req.files?.vigilancia?.[0]) archivosABorrar.push(req.files.vigilancia[0].path);
+  if (req.files?.nomina?.[0]) archivosABorrar.push(req.files.nomina[0].path);
+
+  try {
+    const { fechaInicio, fechaFin, anio } = req.body;
+    if (!req.files?.vigilancia || !req.files?.nomina) {
+      return res.status(400).json({ error: 'Se requieren ambos archivos Excel' });
+    }
+
+    const maestro = await Empleado.find({ status: 'activo' });
+    const vigRes = parsearVigilancia(req.files.vigilancia[0].path);
+    const nomRes = parsearNomina(req.files.nomina[0].path);
+
+    const novs = vigRes.data;
+    const novNames = vigRes.names;
+    const actNames = nomRes.names;
+    const acts = optimizarYSanitizarNomina(nomRes.data);
+    const nominaCorregida = reconstruirLayoutPlano(acts, actNames);
+
+    const diasLaborales = (fechaInicio && fechaFin && anio)
+      ? obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio))
+      : [];
+
+    const contratosMaestro = new Set(maestro.map(emp => emp.contrato));
+    const todosEmpleados = [];
+    maestro.forEach(emp => todosEmpleados.push({ contrato: emp.contrato, nombre: emp.nombre }));
+
+    for (const contrato in acts) {
+      if (!contratosMaestro.has(contrato)) {
+        todosEmpleados.push({ contrato, nombre: actNames[contrato] || 'Desconocido' });
+      }
+    }
+
+    const matriz = calcularMatrizLaboral(todosEmpleados, diasLaborales, acts, novs, parseInt(anio), fechaInicio, fechaFin);
+    const reporteTractoristas = procesarReporteTractoristas(acts, actNames);
+
+    // ... (Mantén aquí tu lógica de conflictos, inactivos, multiples, etc.)
+    const fechasConDatosSet = new Set(diasLaborales);
+    matriz.forEach(emp => {
+      Object.keys(emp.conteo).forEach(fecha => fechasConDatosSet.add(fecha));
+    });
+
+    const diasLaboralesExtendidos = Array.from(fechasConDatosSet).sort((a, b) => new Date(a) - new Date(b));
+
+   res.json({
+      resumen: {
+        total_conflictos: conflictos.length,
+        total_faltantes: faltantes.length,
+        total_inactivos: inactivos.length,
+        total_no_registrados: noRegistrados.length,
+        total_multiples: multiples.length
+      },
+      conflictos,
+      faltantes,
+      inactivos,
+      noRegistrados,
+      multiples,
+      resumenDetalles,
+      matriz,
+      reporteTractoristas,
+      nominaCorregida,
+      diasLaborales
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  } finally {
+    archivosABorrar.forEach(ruta => fs.unlink(ruta, () => {}));
+  }
+});
+
+router.post('/exportar', (req, res) => {
+  try {
+    const { result } = req.body;
+    const wb = xlsx.utils.book_new();
+    
+    if (result.reporteTractoristas) {
+      const wsTractoristas = xlsx.utils.json_to_sheet(result.reporteTractoristas);
+      xlsx.utils.book_append_sheet(wb, wsTractoristas, 'TRACTORISTAS');
+    }
+
+    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.send(buf);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al exportar' });
+  }
+});
+
+module.exports = router;
+`````
+
 ## File: server/routes/empleados.js
 `````javascript
 const express = require('express');
@@ -2035,6 +2147,158 @@ const parsearMaestroEmpleados = (filePath) => {
 };
 
 module.exports = { parsearMaestroEmpleados };
+`````
+
+## File: server/services/tractoristaService.js
+`````javascript
+// services/tractoristaService.js
+
+/**
+ * Extrae el número dentro del paréntesis de una cadena como "(5 HAS)"
+ * Devuelve 0 si no encuentra un número.
+ */
+function extraerHasDesdeDetalle(detalle) {
+  const match = detalle.match(/\((\d+(?:\.\d+)?)\s*HAS\)/i);
+  return match ? parseFloat(match[1]) : 0;
+}
+
+function procesarReporteTractoristas(acts, actNames) {
+  const reporte = [];
+
+  for (const contrato in acts) {
+    let totalHas = 0;
+    let esTractorista = false;
+
+    acts[contrato].forEach(act => {
+      const dv = String(act.digitoVerificacion || '').trim();
+      
+      // Filtrar por DV 504 o 136
+      if (dv === 'DV504' || dv === 'DV136') {
+        esTractorista = true;
+        totalHas += extraerHasDesdeDetalle(act.detalle);
+      }
+    });
+
+    if (esTractorista) {
+      reporte.push({
+        'ID_CONTRATO': contrato,
+        'NOMBRE_TRABAJADOR': actNames[contrato] || 'Desconocido',
+        'TOTAL_HAS': totalHas
+      });
+    }
+  }
+  return reporte;
+}
+
+module.exports = { procesarReporteTractoristas };
+`````
+
+## File: server/utils/dataSanitizer.js
+`````javascript
+// 1. PRIMERO: Definimos las constantes (los Sets)
+const REF_CC_269901 = new Set(['231', '232', '233', '234', '235', '236']);
+const REF_CC_269504 = new Set(['237', '238', '239', '2310', '2311', '2312', '2313', '2314', '2315', '2316', '2317', '241']);
+const REF_CC_269805 = new Set([
+  '242', '243', '244', '245', '246', '2417', '2418', '2419', '2420', '2421',
+  '2422', '2423', '2424', '2425', '2426', '2427', '2428', '2429', '2430', '2431',
+  '2432', '2433', '2434', '2435', '2436', '2437', '2438', '2439', '251', '252',
+  '253', '254'
+]);
+const REF_CC_269603 = new Set(['247', '248', '249', '2410', '2411', '2412', '2413', '2414', '2415', '2416']);
+const REF_CC_269401 = new Set(['876', '877']);
+
+// --- FUNCIÓN AUXILIAR PARA LLAVES FLEXIBLES ---
+function obtenerValorFlexible(objeto, llavesPosibles) {
+  const llaveReal = Object.keys(objeto).find(k =>
+    llavesPosibles.includes(k.toLowerCase().replace(/[^a-z0-9]/g, ''))
+  );
+  return llaveReal ? objeto[llaveReal] : '';
+}
+
+function optimizarYSanitizarNomina(acts) {
+  for (const contrato in acts) {
+    acts[contrato] = acts[contrato].map(act => {
+      const refLimpia = String(act.referencia || '').trim();
+
+      // 1. Lógica de excepción (DV423 + 265510)
+      const esExcepcion = String(act.digitoVerificacion || '').trim() === 'DV423' &&
+        String(act.centroCosto || '').trim() === '265510';
+
+      if (esExcepcion) {
+        return {
+          ...act,
+          centroCostoCorregido: act.centroCosto,
+          cantidadCorregida: 1 // Forzamos 1 en caso de excepción
+        };
+      }
+
+      // 2. Lógica normal de CC
+      let nuevoCC = null;
+      if (REF_CC_269901.has(refLimpia)) nuevoCC = '269901';
+      else if (REF_CC_269504.has(refLimpia)) nuevoCC = '269504';
+      else if (REF_CC_269805.has(refLimpia)) nuevoCC = '269805';
+      else if (REF_CC_269603.has(refLimpia)) nuevoCC = '269603';
+      else if (REF_CC_269401.has(refLimpia)) nuevoCC = '269401';
+
+      const valorOriginal = obtenerValorFlexible(act, ['centrocosto', 'centrodecosto', 'cc', 'centro_costo']);
+      const centroCostoFinal = nuevoCC !== null ? nuevoCC : valorOriginal;
+
+      // 3. Limpieza de Cantidad: Se hace aquí para que reconstruirLayoutPlano solo imprima
+      // Elimina puntos de miles y toma la parte entera antes de la coma decimal
+      let raw = String(act.cantidad || '0').trim();
+      let soloDigitos = raw.replace(/\D/g, '');
+      const cantidadFinal = parseInt(soloDigitos, 10) / 1000;
+
+      return {
+        ...act,
+        centroCostoCorregido: centroCostoFinal,
+        cantidadCorregida: cantidadFinal
+      };
+    });
+  }
+  return acts;
+}
+
+function reconstruirLayoutPlano(acts, actNames) {
+  const filasAExportar = [];
+
+  for (const contrato in acts) {
+    // Ordenamos internamente por fecha
+    acts[contrato].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
+
+    acts[contrato].forEach(act => {
+      filasAExportar.push({
+        'ID_CONTRATO': contrato,
+        'NOMBRE_TRABAJADOR': actNames[contrato] || 'Desconocido',
+        'DIGITO_VERIFICACION': act.digitoVerificacion || '',
+        'CONCEPTO_DV': act.concepto || '',
+        'CANTIDAD': act.cantidadCorregida, // Ya llega limpio desde optimizarYSanitizarNomina
+        'TOTAL_1': '',
+        'CENTRO_COSTO': act.centroCostoCorregido || '',
+        'TOTAL_2': '',
+        'DETALLE_ACTIVIDAD': act.detalle || '',
+        'ITEM_CONTABLE': '',
+        'FECHA': act.fecha || '',
+        'REFERENCIA': act.referencia || ''
+      });
+    });
+  }
+
+  // Ordenar global por nombre de trabajador y luego por fecha
+  filasAExportar.sort((a, b) => {
+    const nombreA = a.NOMBRE_TRABAJADOR.toUpperCase();
+    const nombreB = b.NOMBRE_TRABAJADOR.toUpperCase();
+    if (nombreA !== nombreB) return nombreA.localeCompare(nombreB);
+    return new Date(a.FECHA) - new Date(b.FECHA);
+  });
+
+  return filasAExportar;
+}
+
+module.exports = {
+  optimizarYSanitizarNomina,
+  reconstruirLayoutPlano
+};
 `````
 
 ## File: server/utils/stringUtils.js
@@ -2608,6 +2872,569 @@ NODE_ENV=development
 `````markdown
 # payrollresume
 Auditoría de días laborales nómina
+`````
+
+## File: .devcontainer/devcontainer.json
+`````json
+{
+  "name": "Novedad Control",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "forwardPorts": [3000, 8080, 5432],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+  "postCreateCommand": "mkdir -p client/src server/db"
+}
+`````
+
+## File: client/src/components/EmployeeManager.jsx
+`````javascript
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+// Configurar baseURL para producción si se define la variable Vite
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
+import { Upload, Loader2, Search, UserPlus, X, FileDown } from 'lucide-react';
+
+export default function EmployeeManager() {
+  const [loading, setLoading] = useState(false);
+  const [employees, setEmployees] = useState([]);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [search, setSearch] = useState('');
+  
+  // Estado para el modal de agregar empleado
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newEmployee, setNewEmployee] = useState({ nombre: '', contrato: '' });
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const res = await axios.get('/api/empleados');
+        setEmployees(res.data);
+      } catch (err) {
+        console.error('Error fetching employees', err);
+        setError('No se pudo cargar la lista de empleados. Ver consola para más detalles.');
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  const handleUpload = async (e) => {
+    e.preventDefault();
+    setLoading(true); setError(''); setSuccess('');
+    const formData = new FormData();
+    if (!e.target.csvFile.files[0]) {
+      setError('Por favor seleccione un archivo');
+      setLoading(false);
+      return;
+    }
+    formData.append('file', e.target.csvFile.files[0]);
+    try {
+      const res = await axios.post('/api/empleados/cargar', formData);
+      setSuccess(res.data.message);
+      if (res.data.warnings && res.data.warnings.length > 0) {
+        setError(`Atención: Se detectaron ${res.data.warnings.length} contratos en notación científica. Por favor, exporte el CSV con formato de Texto.`);
+      }
+      const updatedRes = await axios.get('/api/empleados');
+      setEmployees(updatedRes.data);
+    } catch (err) { setError(err.response?.data?.error || 'Error al cargar el archivo CSV'); }
+    finally { setLoading(false); }
+  };
+
+  const handleAddNewEmployee = async (e) => {
+    e.preventDefault();
+    setAdding(true); setError(''); setSuccess('');
+    try {
+      const res = await axios.post('/api/empleados', newEmployee);
+      setSuccess(res.data.message);
+      setIsModalOpen(false);
+      setNewEmployee({ nombre: '', contrato: '' });
+      const updatedRes = await axios.get('/api/empleados');
+      setEmployees(updatedRes.data);
+    } catch (err) { setError(err.response?.data?.error || 'Error al agregar el empleado'); }
+    finally { setAdding(false); }
+  };
+
+  const handleExportEmployees = async () => {
+    try {
+      const response = await axios.get('/api/empleados/exportar', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `maestro_empleados_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch { setError('Error al exportar la lista de empleados'); }
+  };
+
+  const filteredEmployees = employees.filter(emp => 
+    emp.nombre.toLowerCase().includes(search.toLowerCase()) || emp.contrato.includes(search)
+  );
+
+  const toggleStatus = async (contrato, currentStatus) => {
+    const newStatus = currentStatus === 'activo' ? 'inactivo' : 'activo';
+    try {
+      await axios.put(`/api/empleados/${contrato}`, { status: newStatus });
+      const res = await axios.get('/api/empleados');
+      setEmployees(res.data);
+    } catch { setError('Error al cambiar el estado'); }
+  };
+
+  const deleteEmployee = async (contrato) => {
+    if(confirm('¿Estás seguro de eliminar este empleado?')) {
+      try {
+        await axios.delete(`/api/empleados/${contrato}`);
+        const res = await axios.get('/api/empleados');
+        setEmployees(res.data);
+      } catch { setError('Error al eliminar el empleado'); }
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Gestión de Empleados</h1>
+        <div className="flex gap-2 items-center">
+          <button 
+            onClick={() => setIsModalOpen(true)} 
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors"
+          >
+            <UserPlus className="w-4 h-4" /> Agregar Empleado
+          </button>
+          <button 
+            onClick={handleExportEmployees}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-colors"
+          >
+            <FileDown className="w-4 h-4" /> Exportar Maestro
+          </button>
+          <form onSubmit={handleUpload} className="flex gap-2 items-center">
+            <input type="file" name="csvFile" accept=".csv" className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+            <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 flex items-center gap-2 transition-colors">
+              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+              <Upload className="w-4 h-4" /> Cargar CSV
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
+      {success && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">{success}</div>}
+
+      <div className="mb-6 relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+        <input 
+          type="text" 
+          placeholder="Buscar por nombre o contrato..." 
+          className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="bg-white shadow rounded-lg overflow-hidden border">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-gray-50 border-b">
+            <tr>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Contrato</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Nombre</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Estado</th>
+              <th className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredEmployees.length > 0 ? (
+              filteredEmployees.map((emp, idx) => (
+                <tr key={idx} className="border-b hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{emp.contrato}</td>
+                  <td className="px-6 py-4 text-sm text-gray-600">{emp.nombre}</td>
+                  <td className="px-6 py-4 text-sm">
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${emp.status === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                      {emp.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-right flex justify-end gap-3">
+                    <button onClick={() => toggleStatus(emp.contrato, emp.status)} className="text-blue-600 hover:text-blue-800 font-medium">
+                      {emp.status === 'activo' ? 'Desactivar' : 'Activar'}
+                    </button>
+                    <button onClick={() => deleteEmployee(emp.contrato)} className="text-red-600 hover:text-red-800 font-medium">Eliminar</button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="px-6 py-10 text-center text-gray-500">No se encontraron empleados</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal para agregar empleado */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="flex justify-between items-center p-6 border-b">
+              <h3 className="text-xl font-bold text-gray-800">Agregar Nuevo Empleado</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <form onSubmit={handleAddNewEmployee} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                  value={newEmployee.nombre}
+                  onChange={e => setNewEmployee({...newEmployee, nombre: e.target.value})}
+                  placeholder="Ej. Juan Perez"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Número de Contrato / Cédula</label>
+                <input 
+                  type="text" 
+                  required 
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
+                  value={newEmployee.contrato}
+                  onChange={e => setNewEmployee({...newEmployee, contrato: e.target.value})}
+                  placeholder="Ej. 100427300941"
+                />
+              </div>
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsModalOpen(false)} 
+                  className="flex-1 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={adding} 
+                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  {adding && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Guardar Empleado
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+`````
+
+## File: client/src/main.jsx
+`````javascript
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import axios from 'axios';
+import './index.css'
+import App from './App.jsx'
+
+// Determina la URL de la API basándose en el entorno
+const API_URL = import.meta.env.VITE_API_URL || 
+               (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+                ? 'http://localhost:8080' 
+                : '');
+
+axios.defaults.baseURL = API_URL;
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+`````
+
+## File: client/vite.config.js
+`````javascript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+        secure: false,
+      }
+    }
+  }
+})
+`````
+
+## File: server/services/matrixService.js
+`````javascript
+const xlsx = require('xlsx');
+const { obtenerDiasLaborales } = require('../utils/dateUtils');
+
+const normalizarTexto = (text) => {
+  if (!text) return '';
+  return text.toUpperCase()
+             .normalize("NFD")
+             .replace(/[\u0300-\u036f]/g, "")
+             .trim();
+};
+
+const generarDiasCalendarioTodos = (fechaInicioStr, fechaFinStr) => {
+  const listaDias = [];
+  const [anioI, mesI, diaI] = fechaInicioStr.split('-').map(Number);
+  const [anioF, mesF, diaF] = fechaFinStr.split('-').map(Number);
+  
+  const inicio = new Date(anioI, mesI - 1, diaI);
+  const fin = new Date(anioF, mesF - 1, diaF);
+  
+  let actual = new Date(inicio);
+  while (actual <= fin) {
+    const yyyy = actual.getFullYear();
+    const mm = String(actual.getMonth() + 1).padStart(2, '0');
+    const dd = String(actual.getDate()).padStart(2, '0');
+    listaDias.push(`${yyyy}-${mm}-${dd}`);
+    actual.setDate(actual.getDate() + 1);
+  }
+  return listaDias;
+};
+
+const calcularMatrizLaboral = (todosEmpleados, diasLaborales, acts, novs, anio = null, fechaInicio = null, fechaFin = null) => {
+  const matriz = [];
+
+  const diasCalendarioCompleto = (fechaInicio && fechaFin) 
+    ? generarDiasCalendarioTodos(fechaInicio, fechaFin)
+    : diasLaborales;
+
+  todosEmpleados.forEach(emp => {
+    const empActs = acts[emp.contrato] || [];
+    const empNovs = novs[emp.contrato] || [];
+    const conteoDias = {};
+
+    // Buscamos si existe 'DV01' en el campo guardado (DIGITO_VERIFICACION) o SUELDO BASICO
+    const isAdmin = empActs.some(act => {
+      const digitoNorm = String(act.digitoVerificacion || '').trim().toUpperCase();
+      if (digitoNorm === 'DV01') return true;
+
+      const conceptoNorm = normalizarTexto(act.concepto);
+      return conceptoNorm.includes('SUELDO BASICO') || conceptoNorm.includes('SALARIO BASE');
+    });
+
+    const diasAIterar = isAdmin ? diasCalendarioCompleto : diasLaborales;
+
+    diasAIterar.forEach(dia => {
+      const actividadesDia = empActs.filter(a => a.fecha === dia);
+      const actCount = actividadesDia.length;
+
+      const novedadesDia = empNovs.filter(n => n.fecha === dia);
+      const tiposNovedades = [...new Set(novedadesDia.map(n => n.tipo))].join(', ');
+
+      const [anioDia, mesDia, diaMes] = dia.split('-').map(Number);
+      const ultimoDiaMes = new Date(anioDia, mesDia, 0).getDate();
+      const esUltimoDiaQuincena = diaMes === 15 || diaMes === ultimoDiaMes;
+
+      let cellValue = '';
+
+      if (isAdmin) {
+        const parts = [];
+        
+        if (esUltimoDiaQuincena && anio) {
+          if (diaMes === 15) {
+            parts.push(15);
+          } else {
+            const diasTotales = diaMes - 15;
+            const esDiaLaboralFinal = obtenerDiasLaborales(dia, dia, parseInt(anio)).length > 0;
+            parts.push(esDiaLaboralFinal ? diasTotales : diasTotales - 1);
+          }
+        }
+
+        parts.push('ADM');
+        if (tiposNovedades) parts.push(tiposNovedades);
+        cellValue = parts.join(', ');
+      } else {
+        const parts = [];
+        if (actCount > 0) parts.push(actCount);
+        if (tiposNovedades) parts.push(tiposNovedades);
+        cellValue = parts.join(', ');
+      }
+      
+      if (cellValue !== '') {
+        conteoDias[dia] = cellValue;
+      }
+    });
+
+    matriz.push({
+      contrato: emp.contrato,
+      nombre: emp.nombre,
+      conteo: conteoDias
+    });
+  });
+
+  return matriz;
+};
+
+const generarCSVMatriz = (matriz, diasLaborales) => {
+  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+  const formattedDays = diasLaborales.map(date => {
+    const [y, m, d] = date.split('-');
+    return `${d} ${months[parseInt(m) - 1]}`;
+  });
+
+  const header = ['Nombre', ...formattedDays].join(',');
+  const rows = matriz.map(emp => {
+    const rowValues = diasLaborales.map(date => {
+      const val = emp.conteo[date] || '';
+      return String(val).includes(',') ? `"${val}"` : val;
+    });
+    return [`"${emp.nombre}"`, ...rowValues].join(',');
+  });
+
+  return [header, ...rows].join('\n');
+};
+
+module.exports = { calcularMatrizLaboral, generarCSVMatriz };
+`````
+
+## File: server/utils/dateUtils.js
+`````javascript
+const { FESTIVOS_COLOMBIA } = require('../config/constants');
+
+const parsearFechaExcel = (valor) => {
+  if (!valor) return null;
+  if (typeof valor === 'number') {
+    const excelEpoch = new Date(1900, 0, 1);
+    return new Date(excelEpoch.getTime() + (valor - 1) * 24 * 60 * 60 * 1000);
+  }
+  if (valor instanceof Date) return valor;
+  const date = new Date(valor);
+  return isNaN(date) ? null : date;
+};
+
+const formatearFechaISO = (date) => {
+  if (!date) return null;
+  const d = date instanceof Date ? date : new Date(date);
+  const anio = d.getFullYear();
+  const mes = String(d.getMonth() + 1).padStart(2, '0');
+  const dia = String(d.getDate()).padStart(2, '0');
+  return `${anio}-${mes}-${dia}`;
+};
+
+const esFestivo = (fecha, anio) => {
+  const f = fecha instanceof Date ? fecha : new Date(fecha);
+  const mes = f.getMonth() + 1;
+  const dia = f.getDate();
+  const festivos = FESTIVOS_COLOMBIA[anio] || [];
+  return festivos.some(f => f.mes === mes && f.dia === dia);
+};
+
+const esDiaLaboral = (fecha, anio) => {
+  const d = fecha instanceof Date ? fecha : new Date(fecha);
+  const diaSemana = d.getDay();
+  if (diaSemana === 0) return false; // Domingo
+  if (diaSemana === 6) return true;  // Sábado
+  return !esFestivo(d, anio);
+};
+
+const obtenerDiasCalendario = (inicio, fin) => {
+  const dias = [];
+  const [anioI, mesI, diaI] = inicio.split('-').map(Number);
+  const [anioF, mesF, diaF] = fin.split('-').map(Number);
+
+  const actual = new Date(anioI, mesI - 1, diaI);
+  const finale = new Date(anioF, mesF - 1, diaF);
+
+  actual.setHours(0, 0, 0, 0);
+  finale.setHours(0, 0, 0, 0);
+
+  while (actual <= finale) {
+    dias.push(formatearFechaISO(actual));
+    actual.setDate(actual.getDate() + 1);
+  }
+
+  return dias;
+};
+
+const obtenerDiasLaborales = (inicio, fin, anio) => {
+  const dias = [];
+  
+  // Parseo manual para evitar el desplazamiento de zona horaria (UTC vs Local)
+  const [anioI, mesI, diaI] = inicio.split('-').map(Number);
+  const [anioF, mesF, diaF] = fin.split('-').map(Number);
+  
+  const actual = new Date(anioI, mesI - 1, diaI);
+  const finale = new Date(anioF, mesF - 1, diaF);
+  
+  actual.setHours(0, 0, 0, 0);
+  finale.setHours(0, 0, 0, 0);
+  
+  while (actual <= finale) {
+    if (esDiaLaboral(actual, anio)) {
+      dias.push(formatearFechaISO(actual));
+    }
+    actual.setDate(actual.getDate() + 1);
+  }
+  return dias;
+};
+
+module.exports = {
+  parsearFechaExcel,
+  formatearFechaISO,
+  esFestivo,
+  esDiaLaboral,
+  obtenerDiasCalendario,
+  obtenerDiasLaborales
+};
+`````
+
+## File: docker-compose.yml
+`````yaml
+version: '3.8'
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:20
+    command: sleep infinity
+    ports:
+      - "3000:3000"
+      - "8080:8080"
+    volumes:
+      - ./:/workspace:cached
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/novedad_db
+      - PORT=8080
+    depends_on:
+      - db
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: novedad_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+volumes:
+  pg_data:
 `````
 
 ## File: repomix-output.xml
@@ -14397,32 +15224,6 @@ volumes:
 </files>
 `````
 
-## File: .devcontainer/devcontainer.json
-`````json
-{
-  "name": "Novedad Control",
-  "dockerComposeFile": ["../docker-compose.yml"],
-  "service": "app",
-  "workspaceFolder": "/workspace",
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "20"
-    }
-  },
-  "forwardPorts": [3000, 8080, 5432],
-  "customizations": {
-    "vscode": {
-      "extensions": [
-        "dbaeumer.vscode-eslint",
-        "bradlc.vscode-tailwindcss",
-        "ms-azuretools.vscode-docker"
-      ]
-    }
-  },
-  "postCreateCommand": "mkdir -p client/src server/db"
-}
-`````
-
 ## File: client/src/components/AuditManager.jsx
 `````javascript
 import { useState, useEffect } from 'react';
@@ -14463,6 +15264,25 @@ export default function AuditManager() {
     } catch (err) { setError(err.response?.data?.error || 'Error al procesar la auditoría'); }
     finally { setLoading(false); }
   };
+
+  const exportNominaCorregida = async () => {
+  try {
+    const response = await axios.post('/api/auditoria/exportar-nomina-corregida', { result }, { responseType: 'blob' });
+    
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `nomina_corregida_${new Date().toISOString().split('T')[0]}.xlsx`);
+    
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) {
+    // CORRECCIÓN: Usamos la variable err para registrar el fallo técnico en consola
+    console.error('Error detallado de la descarga:', err);
+    setError('Error al descargar la nómina corregida');
+  }
+};
 
   const exportToExcel = async () => {
     try {
@@ -14652,6 +15472,15 @@ export default function AuditManager() {
               <button onClick={exportToExcel} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow-sm whitespace-nowrap">
                 <FileDown size={20} /> Excel
               </button>
+              <button
+                onClick={exportNominaCorregida}
+                className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg font-semibold transition shadow-sm flex items-center gap-2"
+              >
+                <svg className="w-5 height-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Descargar Nómina Corregida
+              </button>
             </div>
           </div>
 
@@ -14669,8 +15498,8 @@ export default function AuditManager() {
                 { key: 'contrato', label: 'Contrato' },
                 { key: 'nombre', label: 'Nombre' },
                 { key: 'fecha', label: 'Fecha' },
-                { 
-                  key: 'novedad', 
+                {
+                  key: 'novedad',
                   label: 'Novedad',
                   render: row => (
                     <div className="flex flex-col gap-1">
@@ -14682,10 +15511,10 @@ export default function AuditManager() {
                     </div>
                   )
                 },
-                { 
-                  key: 'actividad', 
+                {
+                  key: 'actividad',
                   label: 'Actividad',
-                render: row => (
+                  render: row => (
                     <div className="flex flex-col gap-1">
                       {row.actividad.split(', ').map((n, idx) => (
                         <div key={idx} style={{ fontWeight: 'bold' }} className="text-gray-900">
@@ -14693,7 +15522,8 @@ export default function AuditManager() {
                         </div>
                       ))}
                     </div>
-                  ) },
+                  )
+                },
               ])}
               {activeTab === 'faltantes' && renderTable(result.faltantes, [
                 { key: 'contrato', label: 'Contrato' },
@@ -14703,9 +15533,9 @@ export default function AuditManager() {
               {activeTab === 'inactivos' && renderTable(result.inactivos, [
                 { key: 'contrato', label: 'Contrato' },
                 { key: 'nombre', label: 'Nombre' },
-                { 
-                  key: 'dias_faltantes', 
-                  label: 'Días Faltantes', 
+                {
+                  key: 'dias_faltantes',
+                  label: 'Días Faltantes',
                   render: row => (
                     <div className="flex flex-col gap-1">
                       {row.dias_faltantes.map((act, idx) => (
@@ -14715,7 +15545,7 @@ export default function AuditManager() {
                       ))}
                     </div>
                   )
-                 },
+                },
               ])}
               {activeTab === 'noRegistrados' && renderTable(result.noRegistrados, [
                 { key: 'contrato', label: 'Contrato' },
@@ -14784,566 +15614,6 @@ export default function AuditManager() {
     </div>
   );
 }
-`````
-
-## File: client/src/components/EmployeeManager.jsx
-`````javascript
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-
-// Configurar baseURL para producción si se define la variable Vite
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || '';
-import { Upload, Loader2, Search, UserPlus, X, FileDown } from 'lucide-react';
-
-export default function EmployeeManager() {
-  const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState([]);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [search, setSearch] = useState('');
-  
-  // Estado para el modal de agregar empleado
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newEmployee, setNewEmployee] = useState({ nombre: '', contrato: '' });
-  const [adding, setAdding] = useState(false);
-
-  useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const res = await axios.get('/api/empleados');
-        setEmployees(res.data);
-      } catch (err) {
-        console.error('Error fetching employees', err);
-        setError('No se pudo cargar la lista de empleados. Ver consola para más detalles.');
-      }
-    };
-    fetchEmployees();
-  }, []);
-
-  const handleUpload = async (e) => {
-    e.preventDefault();
-    setLoading(true); setError(''); setSuccess('');
-    const formData = new FormData();
-    if (!e.target.csvFile.files[0]) {
-      setError('Por favor seleccione un archivo');
-      setLoading(false);
-      return;
-    }
-    formData.append('file', e.target.csvFile.files[0]);
-    try {
-      const res = await axios.post('/api/empleados/cargar', formData);
-      setSuccess(res.data.message);
-      if (res.data.warnings && res.data.warnings.length > 0) {
-        setError(`Atención: Se detectaron ${res.data.warnings.length} contratos en notación científica. Por favor, exporte el CSV con formato de Texto.`);
-      }
-      const updatedRes = await axios.get('/api/empleados');
-      setEmployees(updatedRes.data);
-    } catch (err) { setError(err.response?.data?.error || 'Error al cargar el archivo CSV'); }
-    finally { setLoading(false); }
-  };
-
-  const handleAddNewEmployee = async (e) => {
-    e.preventDefault();
-    setAdding(true); setError(''); setSuccess('');
-    try {
-      const res = await axios.post('/api/empleados', newEmployee);
-      setSuccess(res.data.message);
-      setIsModalOpen(false);
-      setNewEmployee({ nombre: '', contrato: '' });
-      const updatedRes = await axios.get('/api/empleados');
-      setEmployees(updatedRes.data);
-    } catch (err) { setError(err.response?.data?.error || 'Error al agregar el empleado'); }
-    finally { setAdding(false); }
-  };
-
-  const handleExportEmployees = async () => {
-    try {
-      const response = await axios.get('/api/empleados/exportar', { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `maestro_empleados_${new Date().toISOString().split('T')[0]}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch { setError('Error al exportar la lista de empleados'); }
-  };
-
-  const filteredEmployees = employees.filter(emp => 
-    emp.nombre.toLowerCase().includes(search.toLowerCase()) || emp.contrato.includes(search)
-  );
-
-  const toggleStatus = async (contrato, currentStatus) => {
-    const newStatus = currentStatus === 'activo' ? 'inactivo' : 'activo';
-    try {
-      await axios.put(`/api/empleados/${contrato}`, { status: newStatus });
-      const res = await axios.get('/api/empleados');
-      setEmployees(res.data);
-    } catch { setError('Error al cambiar el estado'); }
-  };
-
-  const deleteEmployee = async (contrato) => {
-    if(confirm('¿Estás seguro de eliminar este empleado?')) {
-      try {
-        await axios.delete(`/api/empleados/${contrato}`);
-        const res = await axios.get('/api/empleados');
-        setEmployees(res.data);
-      } catch { setError('Error al eliminar el empleado'); }
-    }
-  };
-
-  return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Gestión de Empleados</h1>
-        <div className="flex gap-2 items-center">
-          <button 
-            onClick={() => setIsModalOpen(true)} 
-            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-colors"
-          >
-            <UserPlus className="w-4 h-4" /> Agregar Empleado
-          </button>
-          <button 
-            onClick={handleExportEmployees}
-            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2 transition-colors"
-          >
-            <FileDown className="w-4 h-4" /> Exportar Maestro
-          </button>
-          <form onSubmit={handleUpload} className="flex gap-2 items-center">
-            <input type="file" name="csvFile" accept=".csv" className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-            <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 flex items-center gap-2 transition-colors">
-              {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-              <Upload className="w-4 h-4" /> Cargar CSV
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm">{error}</div>}
-      {success && <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-lg text-sm">{success}</div>}
-
-      <div className="mb-6 relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input 
-          type="text" 
-          placeholder="Buscar por nombre o contrato..." 
-          className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      <div className="bg-white shadow rounded-lg overflow-hidden border">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-50 border-b">
-            <tr>
-              <th className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Contrato</th>
-              <th className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Nombre</th>
-              <th className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase">Estado</th>
-              <th className="px-6 py-3 text-xs font-semibold text-gray-600 uppercase text-right">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEmployees.length > 0 ? (
-              filteredEmployees.map((emp, idx) => (
-                <tr key={idx} className="border-b hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{emp.contrato}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{emp.nombre}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${emp.status === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                      {emp.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-right flex justify-end gap-3">
-                    <button onClick={() => toggleStatus(emp.contrato, emp.status)} className="text-blue-600 hover:text-blue-800 font-medium">
-                      {emp.status === 'activo' ? 'Desactivar' : 'Activar'}
-                    </button>
-                    <button onClick={() => deleteEmployee(emp.contrato)} className="text-red-600 hover:text-red-800 font-medium">Eliminar</button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="4" className="px-6 py-10 text-center text-gray-500">No se encontraron empleados</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modal para agregar empleado */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-xl font-bold text-gray-800">Agregar Nuevo Empleado</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <form onSubmit={handleAddNewEmployee} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
-                <input 
-                  type="text" 
-                  required 
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                  value={newEmployee.nombre}
-                  onChange={e => setNewEmployee({...newEmployee, nombre: e.target.value})}
-                  placeholder="Ej. Juan Perez"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Número de Contrato / Cédula</label>
-                <input 
-                  type="text" 
-                  required 
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" 
-                  value={newEmployee.contrato}
-                  onChange={e => setNewEmployee({...newEmployee, contrato: e.target.value})}
-                  placeholder="Ej. 100427300941"
-                />
-              </div>
-              <div className="pt-4 flex gap-3">
-                <button 
-                  type="button" 
-                  onClick={() => setIsModalOpen(false)} 
-                  className="flex-1 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit" 
-                  disabled={adding} 
-                  className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-blue-300 font-medium transition-colors flex items-center justify-center gap-2"
-                >
-                  {adding && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Guardar Empleado
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-`````
-
-## File: client/src/main.jsx
-`````javascript
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import axios from 'axios';
-import './index.css'
-import App from './App.jsx'
-
-// Determina la URL de la API basándose en el entorno
-const API_URL = import.meta.env.VITE_API_URL || 
-               (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                ? 'http://localhost:8080' 
-                : '');
-
-axios.defaults.baseURL = API_URL;
-
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-)
-`````
-
-## File: client/vite.config.js
-`````javascript
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-
-// https://vite.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-        secure: false,
-      }
-    }
-  }
-})
-`````
-
-## File: server/routes/auditoria.js
-`````javascript
-const express = require('express');
-const router = express.Router();
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
-const xlsx = require('xlsx');
-const { parsearVigilancia, parsearNomina } = require('../services/excelParser');
-const { obtenerDiasLaborales } = require('../utils/dateUtils');
-const { calcularMatrizLaboral, generarCSVMatriz } = require('../services/matrixService');
-const Empleado = require('../models/Empleado');
-
-const upload = multer({ dest: 'uploads/' });
-
-router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina' }]), async (req, res) => {
-  try {
-    const { fechaInicio, fechaFin, anio } = req.body;
-    if (!req.files?.vigilancia || !req.files?.nomina) {
-      return res.status(400).json({ error: 'Se requieren ambos archivos Excel' });
-    }
-
-    const maestro = await Empleado.find({ status: 'activo' });
-    const vigRes = parsearVigilancia(req.files.vigilancia[0].path);
-    const nomRes = parsearNomina(req.files.nomina[0].path);
-
-    const novs = vigRes.data;
-    const novNames = vigRes.names;
-    const acts = nomRes.data;
-    const actNames = nomRes.names;
-
-    const conflictos = [];
-    for (const contrato in novs) {
-      const actividades = acts[contrato] || [];
-      const contratoLimpio = contrato.trim();
-      const empleado = maestro.find(emp => String(emp.contrato || '').trim() === contratoLimpio);
-      const nombre = empleado ? empleado.nombre : (actNames[contrato] || novNames[contrato] || 'Desconocido');
-
-      novs[contrato].forEach(n => {
-        if (fechaInicio && fechaFin && (n.fecha < fechaInicio || n.fecha > fechaFin)) {
-          return;
-        }
-        const act = actividades.find(a => a.fecha === n.fecha);
-        if (act) {
-          conflictos.push({ contrato, nombre, fecha: n.fecha, novedad: n.tipo, actividad: act.concepto });
-        }
-      });
-    }
-
-    const contratosEnArchivos = new Set([...Object.keys(novs), ...Object.keys(acts)]);
-    const faltantes = maestro.filter(emp => !contratosEnArchivos.has(emp.contrato));
-
-    const contratosMaestro = new Set(maestro.map(emp => emp.contrato));
-    const noRegistrados = [];
-    for (const contrato of contratosEnArchivos) {
-      if (!contratosMaestro.has(contrato)) {
-        const nombre = actNames[contrato] || novNames[contrato] || 'Nombre no encontrado en archivos';
-        noRegistrados.push({ contrato, nombre });
-      }
-    }
-
-    let inactivos = [];
-    if (fechaInicio && fechaFin && anio) {
-      const diasLaborales = obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio));
-      
-      maestro.forEach(emp => {
-        const empNovs = novs[emp.contrato] || [];
-        const empActs = acts[emp.contrato] || [];
-        
-        // --- AQUÍ APLICAMOS EL FILTRO ---
-        // Verificamos si tiene el código DV01 en alguna de sus actividades
-        const esAdministrativo = empActs.some(act => 
-          String(act.digitoVerificacion || '').trim().toUpperCase() === 'DV01'
-        );
-
-        // Si es administrativo (DV01), lo saltamos
-        if (esAdministrativo) return; 
-
-        // Si no es administrativo, procedemos con la lógica de inactivos
-        const fechasConRegistro = new Set([...empNovs.map(n => n.fecha), ...empActs.map(a => a.fecha)]);
-        const diasSinRegistro = diasLaborales.filter(dia => !fechasConRegistro.has(dia));
-        
-        if (diasSinRegistro.length > 0) {
-          inactivos.push({ contrato: emp.contrato, nombre: emp.nombre, dias_faltantes: diasSinRegistro });
-        }
-      });
-    }
-
-    const multiples = [];
-    for (const contrato in acts) {
-      const actividades = acts[contrato];
-      const contratoLimpio = contrato.trim();
-      const empleado = maestro.find(emp => String(emp.contrato || '').trim() === contratoLimpio);
-      const nombre = empleado ? empleado.nombre : (actNames[contrato] || 'Desconocido');
-
-      const conteoPorFecha = {};
-      actividades.forEach(act => {
-        if (!conteoPorFecha[act.fecha]) conteoPorFecha[act.fecha] = [];
-        conteoPorFecha[act.fecha].push(act.concepto);
-      });
-
-      for (const fecha in conteoPorFecha) {
-        if (conteoPorFecha[fecha].length >= 2) {
-          multiples.push({
-            contrato,
-            nombre,
-            fecha,
-            actividades: conteoPorFecha[fecha]
-          });
-        }
-      }
-    }
-    // EL SORT DEBE IR AQUÍ, FUERA DEL BUCLE
-    multiples.sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-    const resumenDetallesMap = {};
-    
-    // 1. Recorremos todas las actividades
-    for (const contrato in acts) {
-      acts[contrato].forEach(act => {
-        const concepto = act.concepto || 'Sin Concepto';
-        const detalle = act.detalle || 'Sin Detalle';
-        const ref = String(act.referencia || 'S/R').trim().toUpperCase();
-        
-        // Creamos una clave única basada en concepto y detalle
-        const key = `${concepto}:::${detalle}`;
-
-        if (!resumenDetallesMap[key]) {
-          resumenDetallesMap[key] = { concepto, detalle, refs: new Set() };
-        }
-        resumenDetallesMap[key].refs.add(ref);
-      });
-    }
-
-    // 2. Ahora, el paso clave: fusionar los que comparten misma referencia
-    // Transformamos el mapa a un array plano
-    let listaIntermedia = Object.values(resumenDetallesMap);
-    
-    // Agrupamos por concepto y referencia para concatenar detalles
-    const finalMap = {};
-    
-    listaIntermedia.forEach(item => {
-      // Intentamos identificar grupos por concepto + referencia (si solo hay una ref)
-      const refKey = Array.from(item.refs).length === 1 ? Array.from(item.refs)[0] : null;
-      const groupKey = refKey ? `${item.concepto}:::${refKey}` : `${item.concepto}:::${item.detalle}`;
-
-      if (!finalMap[groupKey]) {
-        finalMap[groupKey] = { 
-          concepto: item.concepto, 
-          detalles: new Set(), 
-          refs: new Set() 
-        };
-      }
-      finalMap[groupKey].detalles.add(item.detalle);
-      item.refs.forEach(r => finalMap[groupKey].refs.add(r));
-    });
-
-    // 3. Resultado final para el frontend
-    const resumenDetalles = Object.values(finalMap)
-      .sort((a, b) => a.concepto.localeCompare(b.concepto))
-      .map(item => ({
-        concepto: item.concepto,
-        detalle: Array.from(item.detalles).sort().join(' - '),
-        referencias: Array.from(item.refs).sort().join(', ')
-      }));
-
-    const diasLaborales = (fechaInicio && fechaFin && anio)
-      ? obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio))
-      : [];
-
-    const todosEmpleados = [];
-    maestro.forEach(emp => todosEmpleados.push({ contrato: emp.contrato, nombre: emp.nombre }));
-
-    for (const contrato in acts) {
-      if (!contratosMaestro.has(contrato)) {
-        todosEmpleados.push({ contrato, nombre: actNames[contrato] || novNames[contrato] || 'Desconocido' });
-      }
-    }
-    for (const contrato in novs) {
-      if (!contratosMaestro.has(contrato) && !acts[contrato]) {
-        todosEmpleados.push({ contrato, nombre: novNames[contrato] || 'Desconocido' });
-      }
-    }
-
-    const matriz = calcularMatrizLaboral(todosEmpleados, diasLaborales, acts, novs, parseInt(anio), fechaInicio, fechaFin);
-
-    const fechasConDatosSet = new Set(diasLaborales);
-    matriz.forEach(emp => {
-      Object.keys(emp.conteo).forEach(fecha => fechasConDatosSet.add(fecha));
-    });
-    
-    const diasLaboralesExtendidos = Array.from(fechasConDatosSet).sort((a, b) => new Date(a) - new Date(b));
-
-    res.json({
-      resumen: {
-        total_conflictos: conflictos.length,
-        total_faltantes: faltantes.length,
-        total_inactivos: inactivos.length,
-        total_no_registrados: noRegistrados.length,
-        total_multiples: multiples.length
-      },
-      conflictos,
-      faltantes,
-      inactivos,
-      noRegistrados,
-      multiples,
-      resumenDetalles,
-      matriz,
-      diasLaborales: diasLaboralesExtendidos 
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/exportar-matriz', (req, res) => {
-  try {
-    const { result } = req.body;
-    if (!result || !result.matriz || !result.diasLaborales) {
-      return res.status(400).json({ error: 'Datos insuficientes para exportar la matriz' });
-    }
-
-    const csvContent = generarCSVMatriz(result.matriz, result.diasLaborales);
-
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', 'attachment; filename="matriz_laboral.csv"');
-    res.status(200).send(csvContent);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al generar el CSV de la matriz' });
-  }
-});
-
-router.post('/exportar', (req, res) => {
-  try {
-    const { result } = req.body;
-    if (!result) return res.status(400).json({ error: 'No se proporcionaron datos para exportar' });
-
-    const wb = xlsx.utils.book_new();
-    const sheets = [
-      { name: 'Conflictos', data: result.conflictos },
-      { name: 'Faltantes', data: result.faltantes },
-      { name: 'Inactivos', data: result.inactivos.map(i => ({ ...i, dias_faltantes: i.dias_faltantes.join(', ') })) },
-      { name: 'No Registrados', data: result.noRegistrados },
-      // AQUÍ USAMOS \n PARA QUE EXCEL SALTE DE LÍNEA
-      { name: 'Multiples Actividades', data: result.multiples.map(m => ({ 
-          ...m, 
-          actividades: m.actividades.join('\n') 
-      })) },
-      { name: 'Resumen Detalles', data: result.resumenDetalles },
-    ];
-    // ... resto de la lógica de exportación igual
-
-    sheets.forEach(sheet => {
-      const ws = xlsx.utils.json_to_sheet(sheet.data);
-      xlsx.utils.book_append_sheet(wb, ws, sheet.name);
-    });
-
-    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-    res.setHeader('Content-Disposition', 'attachment; filename="auditoria.xlsx"');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buf);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al generar el archivo Excel' });
-  }
-});
-
-module.exports = router;
 `````
 
 ## File: server/services/excelParser.js
@@ -15455,7 +15725,10 @@ const parsearNomina = (path) => {
     concepto: headerMap.CONCEPTODV !== undefined ? headerMap.CONCEPTODV : headerMap.CONCEPTO,
     detalle: headerMap.DETALLEACTIVIDAD !== undefined ? headerMap.DETALLEACTIVIDAD : headerMap.DETALLE,
     ref: headerMap.REFERENCIA,
-    digitoVerificacion: headerMap.DIGITOVERIFICACION
+    digitoVerificacion: headerMap.DIGITOVERIFICACION,
+    centroCosto: headerMap.CENTROCOSTO || headerMap.CENTRODEC0STO || headerMap.CC,
+    // Agregamos esto aquí para el mapeo de cantidad
+    cantidad: headerMap.CANTIDAD || headerMap.CANT
   };
 
   const actividades = {};
@@ -15465,12 +15738,15 @@ const parsearNomina = (path) => {
     const row = matrix[i];
     if (!row || row.length === 0) continue;
 
+    // --- AQUÍ ES DONDE DEBE IR LA EXTRACCIÓN ---
+    const cantidadRaw = String((row[cols.cantidad] ?? row[headerMap.CANTIDAD] ?? row[headerMap.CANT]) || '').trim();
+
     const contratoRaw = row[cols.contrato] ?? row[headerMap.IDCONTRATO];
     const contrato = normalizeContract(String(contratoRaw || ''));
     const nombre = String((row[cols.nombre] ?? row[headerMap.NOMBRETRABAJADOR]) || '').trim();
     const fechaRaw = row[cols.fecha] ?? row[headerMap.FECHA];
     const fecha = fechaRaw ? parsearFechaExcel(fechaRaw) : null;
-    
+
     const nombreConcepto = String(
       [
         row[cols.concepto],
@@ -15480,14 +15756,15 @@ const parsearNomina = (path) => {
         row[headerMap.DIGITOVERIFICADOR]
       ].find(valor => String(valor || '').trim()) || ''
     ).trim() || 'Sin Concepto';
-    
+
     const descripcion = String((row[cols.detalle] ?? row[headerMap.DETALLEACTIVIDAD]) || '').trim() || 'Sin Detalle';
     const referencia = String((row[cols.ref] ?? row[headerMap.REFERENCIA]) || '').trim() || 'S/R';
-    
-    // Aquí capturamos la columna del dígito de verificación
-    const digitoVerificacion = cols.digitoVerificacion !== undefined 
-      ? String(row[cols.digitoVerificacion] || '').trim() 
+
+    const digitoVerificacion = cols.digitoVerificacion !== undefined
+      ? String(row[cols.digitoVerificacion] || '').trim()
       : '';
+
+    const centroCostoOriginal = String((row[cols.centroCosto] ?? row[headerMap.CENTROCOSTO] ?? row[headerMap.CENTRODEC0STO]) || '').trim();
 
     if (contrato && fecha) {
       if (!actividades[contrato]) actividades[contrato] = [];
@@ -15497,234 +15774,22 @@ const parsearNomina = (path) => {
         concepto: nombreConcepto,
         detalle: descripcion,
         referencia: referencia,
-        digitoVerificacion: digitoVerificacion // Y lo guardamos en la memoria
+        digitoVerificacion: digitoVerificacion,
+        centroCosto: centroCostoOriginal,
+        cantidad: cantidadRaw // Ahora sí, row existe aquí
       });
     }
+  }
+
+  // --- AQUÍ APLICAMOS EL SORT POR FECHA PARA CADA TRABAJADOR ---
+  for (const contrato in actividades) {
+    actividades[contrato].sort((a, b) => new Date(a.fecha) - new Date(b.fecha));
   }
 
   return { data: actividades, names };
 };
 
 module.exports = { parsearVigilancia, parsearNomina };
-`````
-
-## File: server/services/matrixService.js
-`````javascript
-const xlsx = require('xlsx');
-const { obtenerDiasLaborales } = require('../utils/dateUtils');
-
-const normalizarTexto = (text) => {
-  if (!text) return '';
-  return text.toUpperCase()
-             .normalize("NFD")
-             .replace(/[\u0300-\u036f]/g, "")
-             .trim();
-};
-
-const generarDiasCalendarioTodos = (fechaInicioStr, fechaFinStr) => {
-  const listaDias = [];
-  const [anioI, mesI, diaI] = fechaInicioStr.split('-').map(Number);
-  const [anioF, mesF, diaF] = fechaFinStr.split('-').map(Number);
-  
-  const inicio = new Date(anioI, mesI - 1, diaI);
-  const fin = new Date(anioF, mesF - 1, diaF);
-  
-  let actual = new Date(inicio);
-  while (actual <= fin) {
-    const yyyy = actual.getFullYear();
-    const mm = String(actual.getMonth() + 1).padStart(2, '0');
-    const dd = String(actual.getDate()).padStart(2, '0');
-    listaDias.push(`${yyyy}-${mm}-${dd}`);
-    actual.setDate(actual.getDate() + 1);
-  }
-  return listaDias;
-};
-
-const calcularMatrizLaboral = (todosEmpleados, diasLaborales, acts, novs, anio = null, fechaInicio = null, fechaFin = null) => {
-  const matriz = [];
-
-  const diasCalendarioCompleto = (fechaInicio && fechaFin) 
-    ? generarDiasCalendarioTodos(fechaInicio, fechaFin)
-    : diasLaborales;
-
-  todosEmpleados.forEach(emp => {
-    const empActs = acts[emp.contrato] || [];
-    const empNovs = novs[emp.contrato] || [];
-    const conteoDias = {};
-
-    // Buscamos si existe 'DV01' en el campo guardado (DIGITO_VERIFICACION) o SUELDO BASICO
-    const isAdmin = empActs.some(act => {
-      const digitoNorm = String(act.digitoVerificacion || '').trim().toUpperCase();
-      if (digitoNorm === 'DV01') return true;
-
-      const conceptoNorm = normalizarTexto(act.concepto);
-      return conceptoNorm.includes('SUELDO BASICO') || conceptoNorm.includes('SALARIO BASE');
-    });
-
-    const diasAIterar = isAdmin ? diasCalendarioCompleto : diasLaborales;
-
-    diasAIterar.forEach(dia => {
-      const actividadesDia = empActs.filter(a => a.fecha === dia);
-      const actCount = actividadesDia.length;
-
-      const novedadesDia = empNovs.filter(n => n.fecha === dia);
-      const tiposNovedades = [...new Set(novedadesDia.map(n => n.tipo))].join(', ');
-
-      const [anioDia, mesDia, diaMes] = dia.split('-').map(Number);
-      const ultimoDiaMes = new Date(anioDia, mesDia, 0).getDate();
-      const esUltimoDiaQuincena = diaMes === 15 || diaMes === ultimoDiaMes;
-
-      let cellValue = '';
-
-      if (isAdmin) {
-        const parts = [];
-        
-        if (esUltimoDiaQuincena && anio) {
-          if (diaMes === 15) {
-            parts.push(15);
-          } else {
-            const diasTotales = diaMes - 15;
-            const esDiaLaboralFinal = obtenerDiasLaborales(dia, dia, parseInt(anio)).length > 0;
-            parts.push(esDiaLaboralFinal ? diasTotales : diasTotales - 1);
-          }
-        }
-
-        parts.push('ADM');
-        if (tiposNovedades) parts.push(tiposNovedades);
-        cellValue = parts.join(', ');
-      } else {
-        const parts = [];
-        if (actCount > 0) parts.push(actCount);
-        if (tiposNovedades) parts.push(tiposNovedades);
-        cellValue = parts.join(', ');
-      }
-      
-      if (cellValue !== '') {
-        conteoDias[dia] = cellValue;
-      }
-    });
-
-    matriz.push({
-      contrato: emp.contrato,
-      nombre: emp.nombre,
-      conteo: conteoDias
-    });
-  });
-
-  return matriz;
-};
-
-const generarCSVMatriz = (matriz, diasLaborales) => {
-  const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-  const formattedDays = diasLaborales.map(date => {
-    const [y, m, d] = date.split('-');
-    return `${d} ${months[parseInt(m) - 1]}`;
-  });
-
-  const header = ['Nombre', ...formattedDays].join(',');
-  const rows = matriz.map(emp => {
-    const rowValues = diasLaborales.map(date => {
-      const val = emp.conteo[date] || '';
-      return String(val).includes(',') ? `"${val}"` : val;
-    });
-    return [`"${emp.nombre}"`, ...rowValues].join(',');
-  });
-
-  return [header, ...rows].join('\n');
-};
-
-module.exports = { calcularMatrizLaboral, generarCSVMatriz };
-`````
-
-## File: server/utils/dateUtils.js
-`````javascript
-const { FESTIVOS_COLOMBIA } = require('../config/constants');
-
-const parsearFechaExcel = (valor) => {
-  if (!valor) return null;
-  if (typeof valor === 'number') {
-    const excelEpoch = new Date(1900, 0, 1);
-    return new Date(excelEpoch.getTime() + (valor - 1) * 24 * 60 * 60 * 1000);
-  }
-  if (valor instanceof Date) return valor;
-  const date = new Date(valor);
-  return isNaN(date) ? null : date;
-};
-
-const formatearFechaISO = (date) => {
-  if (!date) return null;
-  const d = date instanceof Date ? date : new Date(date);
-  const anio = d.getFullYear();
-  const mes = String(d.getMonth() + 1).padStart(2, '0');
-  const dia = String(d.getDate()).padStart(2, '0');
-  return `${anio}-${mes}-${dia}`;
-};
-
-const esFestivo = (fecha, anio) => {
-  const f = fecha instanceof Date ? fecha : new Date(fecha);
-  const mes = f.getMonth() + 1;
-  const dia = f.getDate();
-  const festivos = FESTIVOS_COLOMBIA[anio] || [];
-  return festivos.some(f => f.mes === mes && f.dia === dia);
-};
-
-const esDiaLaboral = (fecha, anio) => {
-  const d = fecha instanceof Date ? fecha : new Date(fecha);
-  const diaSemana = d.getDay();
-  if (diaSemana === 0) return false; // Domingo
-  if (diaSemana === 6) return true;  // Sábado
-  return !esFestivo(d, anio);
-};
-
-const obtenerDiasCalendario = (inicio, fin) => {
-  const dias = [];
-  const [anioI, mesI, diaI] = inicio.split('-').map(Number);
-  const [anioF, mesF, diaF] = fin.split('-').map(Number);
-
-  const actual = new Date(anioI, mesI - 1, diaI);
-  const finale = new Date(anioF, mesF - 1, diaF);
-
-  actual.setHours(0, 0, 0, 0);
-  finale.setHours(0, 0, 0, 0);
-
-  while (actual <= finale) {
-    dias.push(formatearFechaISO(actual));
-    actual.setDate(actual.getDate() + 1);
-  }
-
-  return dias;
-};
-
-const obtenerDiasLaborales = (inicio, fin, anio) => {
-  const dias = [];
-  
-  // Parseo manual para evitar el desplazamiento de zona horaria (UTC vs Local)
-  const [anioI, mesI, diaI] = inicio.split('-').map(Number);
-  const [anioF, mesF, diaF] = fin.split('-').map(Number);
-  
-  const actual = new Date(anioI, mesI - 1, diaI);
-  const finale = new Date(anioF, mesF - 1, diaF);
-  
-  actual.setHours(0, 0, 0, 0);
-  finale.setHours(0, 0, 0, 0);
-  
-  while (actual <= finale) {
-    if (esDiaLaboral(actual, anio)) {
-      dias.push(formatearFechaISO(actual));
-    }
-    actual.setDate(actual.getDate() + 1);
-  }
-  return dias;
-};
-
-module.exports = {
-  parsearFechaExcel,
-  formatearFechaISO,
-  esFestivo,
-  esDiaLaboral,
-  obtenerDiasCalendario,
-  obtenerDiasLaborales
-};
 `````
 
 ## File: server/index.js
@@ -15770,39 +15835,340 @@ app.use('/api/auditoria', auditoriaRoutes);
 
 app.get('/api/test', (req, res) => res.json({ status: 'OK' }));
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
 });
 `````
 
-## File: docker-compose.yml
-`````yaml
-version: '3.8'
-services:
-  app:
-    image: mcr.microsoft.com/devcontainers/javascript-node:20
-    command: sleep infinity
-    ports:
-      - "3000:3000"
-      - "8080:8080"
-    volumes:
-      - ./:/workspace:cached
-    environment:
-      - DATABASE_URL=postgres://postgres:password@db:5432/novedad_db
-      - PORT=8080
-    depends_on:
-      - db
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: novedad_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - pg_data:/var/lib/postgresql/data
-volumes:
-  pg_data:
+## File: server/routes/auditoria.js
+`````javascript
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const xlsx = require('xlsx');
+const { parsearVigilancia, parsearNomina } = require('../services/excelParser');
+const { obtenerDiasLaborales } = require('../utils/dateUtils');
+const { calcularMatrizLaboral, generarCSVMatriz } = require('../services/matrixService');
+const Empleado = require('../models/Empleado');
+// Asegúrate de que esta línea esté así:
+const { optimizarYSanitizarNomina, reconstruirLayoutPlano } = require('../utils/dataSanitizer'); // Importar la función de sanitización de datos
+
+const upload = multer({ dest: 'uploads/' });
+
+router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina' }]), async (req, res) => {
+  // Guardamos las rutas de los archivos para poder borrarlos al final
+  const archivosABorrar = [];
+  if (req.files?.vigilancia?.[0]) archivosABorrar.push(req.files.vigilancia[0].path);
+  if (req.files?.nomina?.[0]) archivosABorrar.push(req.files.nomina[0].path);
+
+  try {
+    const { fechaInicio, fechaFin, anio } = req.body;
+    if (!req.files?.vigilancia || !req.files?.nomina) {
+      return res.status(400).json({ error: 'Se requieren ambos archivos Excel' });
+    }
+
+    const maestro = await Empleado.find({ status: 'activo' });
+    const vigRes = parsearVigilancia(req.files.vigilancia[0].path);
+    const nomRes = parsearNomina(req.files.nomina[0].path);
+
+    const novs = vigRes.data;
+    const novNames = vigRes.names;
+
+
+    // --- AQUÍ APLICAMOS LA MAGIA ---
+    // Sanitizamos los datos en memoria antes de que sigan su camino en el algoritmo
+    const actNames = nomRes.names;
+
+    // LLLAMADA AL MÓDULO MODULAR DE SANITIZACIÓN
+    const acts = optimizarYSanitizarNomina(nomRes.data);
+
+    // Generamos la nómina corregida plana para que viaje directo al Frontend y esté lista para exportar
+    const nominaCorregida = reconstruirLayoutPlano(acts, actNames);
+
+
+    const conflictos = [];
+    for (const contrato in novs) {
+      const actividades = acts[contrato] || [];
+      const contratoLimpio = contrato.trim();
+      const empleado = maestro.find(emp => String(emp.contrato || '').trim() === contratoLimpio);
+      const nombre = empleado ? empleado.nombre : (actNames[contrato] || novNames[contrato] || 'Desconocido');
+
+      novs[contrato].forEach(n => {
+        if (fechaInicio && fechaFin && (n.fecha < fechaInicio || n.fecha > fechaFin)) {
+          return;
+        }
+        const act = actividades.find(a => a.fecha === n.fecha);
+        if (act) {
+          conflictos.push({ contrato, nombre, fecha: n.fecha, novedad: n.tipo, actividad: act.concepto });
+        }
+      });
+    }
+
+    const contratosEnArchivos = new Set([...Object.keys(novs), ...Object.keys(acts)]);
+    const faltantes = maestro.filter(emp => !contratosEnArchivos.has(emp.contrato));
+
+    const contratosMaestro = new Set(maestro.map(emp => emp.contrato));
+    const noRegistrados = [];
+    for (const contrato of contratosEnArchivos) {
+      if (!contratosMaestro.has(contrato)) {
+        const nombre = actNames[contrato] || novNames[contrato] || 'Nombre no encontrado en archivos';
+        noRegistrados.push({ contrato, nombre });
+      }
+    }
+
+    let inactivos = [];
+    if (fechaInicio && fechaFin && anio) {
+      const diasLaborales = obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio));
+
+      maestro.forEach(emp => {
+        const empNovs = novs[emp.contrato] || [];
+        const empActs = acts[emp.contrato] || [];
+
+        // --- AQUÍ APLICAMOS EL FILTRO ---
+        // Verificamos si tiene el código DV01 en alguna de sus actividades
+        const esAdministrativo = empActs.some(act =>
+          String(act.digitoVerificacion || '').trim().toUpperCase() === 'DV01'
+        );
+
+        // Si es administrativo (DV01), lo saltamos
+        if (esAdministrativo) return;
+
+        // Si no es administrativo, procedemos con la lógica de inactivos
+        const fechasConRegistro = new Set([...empNovs.map(n => n.fecha), ...empActs.map(a => a.fecha)]);
+        const diasSinRegistro = diasLaborales.filter(dia => !fechasConRegistro.has(dia));
+
+        if (diasSinRegistro.length > 0) {
+          inactivos.push({ contrato: emp.contrato, nombre: emp.nombre, dias_faltantes: diasSinRegistro });
+        }
+      });
+    }
+
+    const multiples = [];
+    for (const contrato in acts) {
+      const actividades = acts[contrato];
+      const contratoLimpio = contrato.trim();
+      const empleado = maestro.find(emp => String(emp.contrato || '').trim() === contratoLimpio);
+      const nombre = empleado ? empleado.nombre : (actNames[contrato] || 'Desconocido');
+
+      const conteoPorFecha = {};
+      actividades.forEach(act => {
+        if (!conteoPorFecha[act.fecha]) conteoPorFecha[act.fecha] = [];
+        conteoPorFecha[act.fecha].push(act.concepto);
+      });
+
+      for (const fecha in conteoPorFecha) {
+        if (conteoPorFecha[fecha].length >= 2) {
+          multiples.push({
+            contrato,
+            nombre,
+            fecha,
+            actividades: conteoPorFecha[fecha]
+          });
+        }
+      }
+    }
+    // EL SORT DEBE IR AQUÍ, FUERA DEL BUCLE
+    multiples.sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+    const resumenDetallesMap = {};
+
+    // 1. Recorremos todas las actividades
+    for (const contrato in acts) {
+      acts[contrato].forEach(act => {
+        const concepto = act.concepto || 'Sin Concepto';
+        const detalle = act.detalle || '';
+        const ref = String(act.referencia || 'S/R').trim().toUpperCase();
+
+        // Creamos una clave única basada en concepto y detalle
+        const key = `${concepto}:::${detalle}`;
+
+        if (!resumenDetallesMap[key]) {
+          resumenDetallesMap[key] = { concepto, detalle, refs: new Set() };
+        }
+        resumenDetallesMap[key].refs.add(ref);
+      });
+    }
+
+    // 2. Ahora, el paso clave: fusionar los que comparten misma referencia
+    // Transformamos el mapa a un array plano
+    let listaIntermedia = Object.values(resumenDetallesMap);
+
+    // Agrupamos por concepto y referencia para concatenar detalles
+    const finalMap = {};
+
+    listaIntermedia.forEach(item => {
+      // Intentamos identificar grupos por concepto + referencia (si solo hay una ref)
+      const refKey = Array.from(item.refs).length === 1 ? Array.from(item.refs)[0] : null;
+      const groupKey = refKey ? `${item.concepto}:::${refKey}` : `${item.concepto}:::${item.detalle}`;
+
+      if (!finalMap[groupKey]) {
+        finalMap[groupKey] = {
+          concepto: item.concepto,
+          detalles: new Set(),
+          refs: new Set()
+        };
+      }
+      finalMap[groupKey].detalles.add(item.detalle);
+      item.refs.forEach(r => finalMap[groupKey].refs.add(r));
+    });
+
+    // 3. Resultado final para el frontend
+    const resumenDetalles = Object.values(finalMap)
+      .sort((a, b) => a.concepto.localeCompare(b.concepto))
+      .map(item => ({
+        concepto: item.concepto,
+        detalle: Array.from(item.detalles).sort().join(' - '),
+        referencias: Array.from(item.refs).sort().join(', ')
+      }));
+
+    const diasLaborales = (fechaInicio && fechaFin && anio)
+      ? obtenerDiasLaborales(fechaInicio, fechaFin, parseInt(anio))
+      : [];
+
+    const todosEmpleados = [];
+    maestro.forEach(emp => todosEmpleados.push({ contrato: emp.contrato, nombre: emp.nombre }));
+
+    for (const contrato in acts) {
+      if (!contratosMaestro.has(contrato)) {
+        todosEmpleados.push({ contrato, nombre: actNames[contrato] || novNames[contrato] || 'Desconocido' });
+      }
+    }
+    for (const contrato in novs) {
+      if (!contratosMaestro.has(contrato) && !acts[contrato]) {
+        todosEmpleados.push({ contrato, nombre: novNames[contrato] || 'Desconocido' });
+      }
+    }
+
+    const matriz = calcularMatrizLaboral(todosEmpleados, diasLaborales, acts, novs, parseInt(anio), fechaInicio, fechaFin);
+
+    const fechasConDatosSet = new Set(diasLaborales);
+    matriz.forEach(emp => {
+      Object.keys(emp.conteo).forEach(fecha => fechasConDatosSet.add(fecha));
+    });
+
+    const diasLaboralesExtendidos = Array.from(fechasConDatosSet).sort((a, b) => new Date(a) - new Date(b));
+
+    res.json({
+      resumen: {
+        total_conflictos: conflictos.length,
+        total_faltantes: faltantes.length,
+        total_inactivos: inactivos.length,
+        total_no_registrados: noRegistrados.length,
+        total_multiples: multiples.length
+      },
+      conflictos,
+      faltantes,
+      inactivos,
+      noRegistrados,
+      multiples,
+      resumenDetalles,
+      matriz,
+      nominaCorregida, // Agrega nominaCorregida al payload de salida
+      diasLaborales: diasLaboralesExtendidos
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    // --- AQUÍ HACEMOS LA LIMPIEZA INMEDIATA ---
+    archivosABorrar.forEach(rutaArchivo => {
+      fs.unlink(rutaArchivo, (err) => {
+        if (err) {
+          console.error(`No se pudo eliminar el archivo temporal: ${rutaArchivo}`, err);
+        } else {
+          console.log(`🗑️ Archivo temporal eliminado con éxito: ${rutaArchivo}`);
+        }
+      });
+    });
+  }
+});
+
+router.post('/exportar-nomina-corregida', (req, res) => {
+  try {
+    const { result } = req.body;
+
+    if (!result || !result.nominaCorregida) {
+      return res.status(400).json({ error: 'No se encontraron datos de nómina corregida para exportar' });
+    }
+
+    // El array plano ya viene procesado desde el análisis inicial
+    const filasAExportar = result.nominaCorregida;
+
+    const wb = xlsx.utils.book_new();
+
+    const ws = xlsx.utils.json_to_sheet(filasAExportar);
+    // Ya no necesitas { header: ... } porque el orden ya lo definiste al crear los objetos
+    xlsx.utils.book_append_sheet(wb, ws, 'Nómina Corregida 3JM');
+
+    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="nomina_corregida_limpia.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.status(200).send(buf);
+  } catch (error) {
+    console.error('Error al exportar nómina:', error);
+    res.status(500).json({ error: 'Error interno al generar el archivo Excel de nómina' });
+  }
+});
+
+router.post('/exportar-matriz', (req, res) => {
+  try {
+    const { result } = req.body;
+    if (!result || !result.matriz || !result.diasLaborales) {
+      return res.status(400).json({ error: 'Datos insuficientes para exportar la matriz' });
+    }
+
+    const csvContent = generarCSVMatriz(result.matriz, result.diasLaborales);
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="matriz_laboral.csv"');
+    res.status(200).send(csvContent);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar el CSV de la matriz' });
+  }
+});
+
+router.post('/exportar', (req, res) => {
+  try {
+    const { result } = req.body;
+    if (!result) return res.status(400).json({ error: 'No se proporcionaron datos para exportar' });
+
+    const wb = xlsx.utils.book_new();
+    const sheets = [
+      { name: 'Conflictos', data: result.conflictos },
+      { name: 'Faltantes', data: result.faltantes },
+      { name: 'Inactivos', data: result.inactivos.map(i => ({ ...i, dias_faltantes: i.dias_faltantes.join(', ') })) },
+      { name: 'No Registrados', data: result.noRegistrados },
+      // AQUÍ USAMOS \n PARA QUE EXCEL SALTE DE LÍNEA
+      {
+        name: 'Multiples Actividades', data: result.multiples.map(m => ({
+          ...m,
+          actividades: m.actividades.join('\n')
+        }))
+      },
+      { name: 'Resumen Detalles', data: result.resumenDetalles },
+    ];
+    // ... resto de la lógica de exportación igual
+
+    sheets.forEach(sheet => {
+      const ws = xlsx.utils.json_to_sheet(sheet.data);
+      xlsx.utils.book_append_sheet(wb, ws, sheet.name);
+    });
+
+    const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    res.setHeader('Content-Disposition', 'attachment; filename="auditoria.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buf);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al generar el archivo Excel' });
+  }
+});
+
+module.exports = router;
 `````

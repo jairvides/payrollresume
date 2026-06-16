@@ -7,6 +7,8 @@ const xlsx = require('xlsx');
 const { parsearVigilancia, parsearNomina } = require('../services/excelParser');
 const { obtenerDiasLaborales } = require('../utils/dateUtils');
 const { calcularMatrizLaboral, generarCSVMatriz } = require('../services/matrixService');
+const { procesarReporteTractoristas } = require('../services/tractoristaService');
+const { procesarReporteBonificacion } = require('../services/bonificacionService');
 const Empleado = require('../models/Empleado');
 // Asegúrate de que esta línea esté así:
 const { optimizarYSanitizarNomina, reconstruirLayoutPlano } = require('../utils/dataSanitizer'); // Importar la función de sanitización de datos
@@ -206,6 +208,24 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
 
     const diasLaboralesExtendidos = Array.from(fechasConDatosSet).sort((a, b) => new Date(a) - new Date(b));
 
+    const reporteTractoristas = procesarReporteTractoristas(acts, actNames);
+
+    // const { fechaInicio, fechaFin } = req.body;
+
+    // Gestionamos los empleados
+    const EMPLEADOS_BONIFICACION = [
+      { id: '11281082232', nombre: 'Luis Oyola' },
+      { id: '11281090663', nombre: 'Carlos Perez' }
+    ];
+
+    // Y luego la los llamamos servicio:
+    const reporteBonificacion = procesarReporteBonificacion(
+      acts,
+      EMPLEADOS_BONIFICACION, // Pasas el objeto completo
+      fechaInicio,
+      fechaFin
+    );
+
     res.json({
       resumen: {
         total_conflictos: conflictos.length,
@@ -222,6 +242,8 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       resumenDetalles,
       matriz,
       nominaCorregida, // Agrega nominaCorregida al payload de salida
+      reporteTractoristas, // Pestaña Tractoristas
+      reporteBonificacion, // Se agrega pestaña Bonificación Fertilizante
       diasLaborales: diasLaboralesExtendidos
     });
 
@@ -291,9 +313,11 @@ router.post('/exportar-matriz', (req, res) => {
 router.post('/exportar', (req, res) => {
   try {
     const { result } = req.body;
+
     if (!result) return res.status(400).json({ error: 'No se proporcionaron datos para exportar' });
 
     const wb = xlsx.utils.book_new();
+
     const sheets = [
       { name: 'Conflictos', data: result.conflictos },
       { name: 'Faltantes', data: result.faltantes },
@@ -314,6 +338,16 @@ router.post('/exportar', (req, res) => {
       const ws = xlsx.utils.json_to_sheet(sheet.data);
       xlsx.utils.book_append_sheet(wb, ws, sheet.name);
     });
+
+    if (result.reporteTractoristas) {
+      const wsTractoristas = xlsx.utils.json_to_sheet(result.reporteTractoristas);
+      xlsx.utils.book_append_sheet(wb, wsTractoristas, 'TRACTORISTAS');
+    }
+
+    if (result.reporteBonificacion) {
+      const wsBonificacion = xlsx.utils.json_to_sheet(result.reporteBonificacion);
+      xlsx.utils.book_append_sheet(wb, wsBonificacion, 'BONIFICACION');
+    }
 
     const buf = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
     res.setHeader('Content-Disposition', 'attachment; filename="auditoria.xlsx"');

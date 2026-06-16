@@ -38,23 +38,23 @@ export default function AuditManager() {
   };
 
   const exportNominaCorregida = async () => {
-  try {
-    const response = await axios.post('/api/auditoria/exportar-nomina-corregida', { result }, { responseType: 'blob' });
-    
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `nomina_corregida_${new Date().toISOString().split('T')[0]}.xlsx`);
-    
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  } catch (err) {
-    // CORRECCIÓN: Usamos la variable err para registrar el fallo técnico en consola
-    console.error('Error detallado de la descarga:', err);
-    setError('Error al descargar la nómina corregida');
-  }
-};
+    try {
+      const response = await axios.post('/api/auditoria/exportar-nomina-corregida', { result }, { responseType: 'blob' });
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `nomina_corregida_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      // CORRECCIÓN: Usamos la variable err para registrar el fallo técnico en consola
+      console.error('Error detallado de la descarga:', err);
+      setError('Error al descargar la nómina corregida');
+    }
+  };
 
   const exportToExcel = async () => {
     try {
@@ -258,9 +258,9 @@ export default function AuditManager() {
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="flex border-b overflow-x-auto">
-              {['conflictos', 'faltantes', 'inactivos', 'noRegistrados', 'multiples', 'resumenDetalle', 'matriz'].map(tab => (
+              {['conflictos', 'faltantes', 'inactivos', 'noRegistrados', 'multiples', 'resumenDetalle', 'matriz', 'tractoristas', 'bonificacion'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={`px-6 py-3 text-sm font-medium whitespace-nowrap ${activeTab === tab ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-gray-700'}`}>
-                  {tab === 'conflictos' ? 'Conflictos' : tab === 'faltantes' ? 'Faltantes' : tab === 'inactivos' ? 'Inactivos' : tab === 'noRegistrados' ? 'No Registrados' : tab === 'multiples' ? 'Mult. Actividades' : tab === 'resumenDetalle' ? 'Resumen Detalles' : 'Matriz Laboral'}
+                  {tab === 'conflictos' ? 'Conflictos' : tab === 'faltantes' ? 'Faltantes' : tab === 'inactivos' ? 'Inactivos' : tab === 'noRegistrados' ? 'No Registrados' : tab === 'multiples' ? 'Mult. Actividades' : tab === 'resumenDetalle' ? 'Resumen Detalles' : tab === 'matriz' ? 'Matriz Laboral' : tab === 'tractoristas' ? 'Tractoristas' : 'Bonificacion'}
                 </button>
               ))}
             </div>
@@ -379,6 +379,59 @@ export default function AuditManager() {
                   </div>
                 </div>
               )}
+
+              {activeTab === 'tractoristas' && result.reporteTractoristas && (
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-6 py-3 text-xs font-semibold uppercase">ID Contrato</th>
+                        <th className="px-6 py-3 text-xs font-semibold uppercase">Nombre Trabajador</th>
+                        <th className="px-6 py-3 text-xs font-semibold uppercase">Total HAS</th>
+                        <th className="px-6 py-3 text-xs font-semibold uppercase">Suma Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {result.reporteTractoristas.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 text-sm">{item.ID_CONTRATO}</td>
+                          <td className="px-6 py-4 text-sm">{item.NOMBRE_TRABAJADOR}</td>
+                          <td className="px-6 py-4 text-sm font-bold">{item.TOTAL_HAS}</td>
+                          <td className="px-6 py-4 text-sm font-bold">{item.SUMA_TOTAL}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+            {activeTab === 'bonificacion' && result?.reporteBonificacion && (
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-6 py-3 text-xs font-semibold uppercase">FECHA</th>
+                      <th className="px-6 py-3 text-xs font-semibold uppercase">CANTIDAD</th>
+                      <th className="px-6 py-3 text-xs font-semibold uppercase">VALOR/INF</th>
+                      <th className="px-6 py-3 text-xs font-semibold uppercase">Luis Oyola</th>
+                      <th className="px-6 py-3 text-xs font-semibold uppercase">Carlos Perez</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {result.reporteBonificacion.map((fila, idx) => (
+                      <tr key={idx} className={`hover:bg-gray-50 ${fila.FECHA === 'TOTAL' ? 'font-bold bg-gray-100' : ''}`}>
+                        <td className="px-6 py-4 text-sm">{fila.FECHA}</td>
+                        <td className="px-6 py-4 text-sm">{fila.CANTIDAD}</td>
+                        <td className="px-6 py-4 text-sm">{fila.VALOR}</td>
+                        <td className="px-6 py-4 text-sm">{fila["Luis Oyola"]?.toFixed(0) || 0}</td>
+                        <td className="px-6 py-4 text-sm">{fila["Carlos Perez"]?.toFixed(0) || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
             </div>
           </div>
         </div>
