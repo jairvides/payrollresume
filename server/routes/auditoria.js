@@ -213,15 +213,15 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
     // const { fechaInicio, fechaFin } = req.body;
 
     // Gestionamos los empleados
-    const EMPLEADOS_BONIFICACION = [
-      { id: '11281082232', nombre: 'Luis Oyola' },
-      { id: '11281090663', nombre: 'Carlos Perez' }
-    ];
+    const empleadosConfig = [
+    { id: '11281082232', nombre: 'Luis Oyola' }, 
+    { id: '11281090663', nombre: 'Carlos Perez' }
+];
 
     // Y luego la los llamamos servicio:
     const reporteBonificacion = procesarReporteBonificacion(
       acts,
-      EMPLEADOS_BONIFICACION, // Pasas el objeto completo
+      empleadosConfig, // Pasas el objeto completo
       fechaInicio,
       fechaFin
     );
@@ -244,6 +244,7 @@ router.post('/analizar', upload.fields([{ name: 'vigilancia' }, { name: 'nomina'
       nominaCorregida, // Agrega nominaCorregida al payload de salida
       reporteTractoristas, // Pestaña Tractoristas
       reporteBonificacion, // Se agrega pestaña Bonificación Fertilizante
+      empleadosConfig, // Se agrega para hacer dinámico el thead de la pestaña Bonificacion
       diasLaborales: diasLaboralesExtendidos
     });
 

@@ -405,32 +405,40 @@ export default function AuditManager() {
                 </div>
               )}
 
-            {activeTab === 'bonificacion' && result?.reporteBonificacion && (
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <table className="w-full text-left">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-6 py-3 text-xs font-semibold uppercase">FECHA</th>
-                      <th className="px-6 py-3 text-xs font-semibold uppercase">CANTIDAD</th>
-                      <th className="px-6 py-3 text-xs font-semibold uppercase">VALOR/INF</th>
-                      <th className="px-6 py-3 text-xs font-semibold uppercase">Luis Oyola</th>
-                      <th className="px-6 py-3 text-xs font-semibold uppercase">Carlos Perez</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {result.reporteBonificacion.map((fila, idx) => (
-                      <tr key={idx} className={`hover:bg-gray-50 ${fila.FECHA === 'TOTAL' ? 'font-bold bg-gray-100' : ''}`}>
-                        <td className="px-6 py-4 text-sm">{fila.FECHA}</td>
-                        <td className="px-6 py-4 text-sm">{fila.CANTIDAD}</td>
-                        <td className="px-6 py-4 text-sm">{fila.VALOR}</td>
-                        <td className="px-6 py-4 text-sm">{fila["Luis Oyola"]?.toFixed(0) || 0}</td>
-                        <td className="px-6 py-4 text-sm">{fila["Carlos Perez"]?.toFixed(0) || 0}</td>
+              {activeTab === 'bonificacion' && result?.reporteBonificacion && (
+                <div className="bg-white rounded-lg shadow overflow-hidden">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-gray-50">
+                        <th className="px-6 py-3 text-xs font-semibold uppercase">FECHA</th>
+                        <th className="px-6 py-3 text-xs font-semibold uppercase">CANTIDAD</th>
+                        <th className="px-6 py-3 text-xs font-semibold uppercase">VALOR/INF</th>
+                        
+                        {/* Generación dinámica de nombres de empleados */}
+                        {result.empleadosConfig.map(emp => (
+                          <th key={emp.id} className="px-6 py-3 text-xs font-semibold uppercase">{emp.nombre}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody className="divide-y">
+                      {result.reporteBonificacion.map((fila, idx) => (
+                        <tr key={idx} className={`${fila.FECHA === 'TOTAL' ? 'font-bold bg-gray-100' : ''}`}>
+                          <td className="px-6 py-4 text-sm">{fila.FECHA}</td>
+                          <td className="px-6 py-4 text-sm">{fila.CANTIDAD}</td>
+                          <td className="px-6 py-4 text-sm">{fila.VALOR}</td>
+                          
+                          {/* Generación dinámica de valores por empleado */}
+                          {result.empleadosConfig.map(emp => (
+                            <td key={emp.id} className="px-6 py-4 text-sm">
+                              {fila[emp.nombre]?.toFixed(0) || 0}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
             </div>
           </div>

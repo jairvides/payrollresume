@@ -12,6 +12,7 @@ const FESTIVOS_COLOMBIA = {
     { mes: 5, dia: 1, nombre: "Dia del Trabajo" },
     { mes: 5, dia: 18, nombre: "Dia de la Ascensión" },
     { mes: 6, dia: 15, nombre: "Corpus Christi" },
+    { mes: 6, dia: 8, nombre: "Día Festivo" },
     { mes: 6, dia: 29, nombre: "San Pedro y San Pablo" },
     { mes: 7, dia: 20, nombre: "Dia de la Independencia" },
     { mes: 8, dia: 7, nombre: "Batalla de Boyacá" },
